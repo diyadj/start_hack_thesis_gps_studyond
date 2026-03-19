@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { INTAKE, STAGES } from '@/lib/copy'
+import { useState, useRef, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { STAGES } from '@/lib/copy'
 import { fields } from '@/data'
 import type { IntakeData } from '@/store/journeyStore'
 
@@ -8,156 +8,459 @@ interface IntakeFormProps {
   onSubmit: (data: IntakeData) => void
 }
 
+type FormData = {
+  degree: IntakeData['degree']
+  topic: string
+  university: string
+  currentStage: string
+  fieldIds: string[]
+  deadline: string
+}
+
+const STEPS = [
+  {
+    id: 'degree' as const,
+    system: 'Target academic level detected. Confirm degree type.',
+    type: 'select' as const,
+    options: [
+      { value: 'bsc', label: 'Bachelor (BSc)' },
+      { value: 'msc', label: 'Master (MSc)' },
+      { value: 'phd', label: 'PhD' },
+    ],
+  },
+  {
+    id: 'topic' as const,
+    system: 'What is your primary research domain?',
+    type: 'text' as const,
+    options: undefined,
+  },
+  {
+    id: 'university' as const,
+    system: 'Which university are you enrolled at?',
+    type: 'text' as const,
+    options: undefined,
+  },
+  {
+    id: 'currentStage' as const,
+    system: 'Select your current thesis stage.',
+    type: 'select' as const,
+    options: STAGES.map((s) => ({ value: s.id, label: s.label })),
+  },
+  {
+    id: 'fieldIds' as const,
+    system: 'Select your fields of study. Press [CONFIRM] when done.',
+    type: 'multiselect' as const,
+    options: fields.map((f) => ({ value: f.id, label: f.name })),
+  },
+  {
+    id: 'deadline' as const,
+    system: 'Set your thesis submission deadline.',
+    type: 'date' as const,
+    options: undefined,
+  },
+]
+
+// Framer Motion variants
+const msgVariants = {
+  hidden: { opacity: 0, y: 14 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
+  exit: { opacity: 0, y: -8, transition: { duration: 0.2 } },
+}
+
+const optionContainerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.06, delayChildren: 0.1 } },
+}
+
+const optionVariants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.25, ease: 'easeOut' } },
+}
+
 export function IntakeForm({ onSubmit }: IntakeFormProps) {
-  const [form, setForm] = useState({
+  const [step, setStep] = useState(0)
+  const [history, setHistory] = useState<Array<{ system: string; user: string }>>([])
+  const [inputValue, setInputValue] = useState('')
+  const [selectedFields, setSelectedFields] = useState<string[]>([])
+  const [form, setForm] = useState<FormData>({
+    degree: 'msc',
     topic: '',
     university: '',
     currentStage: 'orientation',
+    fieldIds: [],
     deadline: '',
-    degree: 'msc' as IntakeData['degree'],
-    fieldIds: [] as string[],
   })
 
-  function toggleField(id: string) {
-    setForm((prev) => ({
-      ...prev,
-      fieldIds: prev.fieldIds.includes(id)
-        ? prev.fieldIds.filter((f) => f !== id)
-        : [...prev.fieldIds, id],
-    }))
+  const inputRef = useRef<HTMLInputElement>(null)
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const totalSteps = STEPS.length
+  const currentStep = STEPS[step]
+
+  useEffect(() => {
+    setTimeout(() => inputRef.current?.focus(), 50)
+  }, [step])
+
+  useEffect(() => {
+    if (bodyRef.current) {
+      bodyRef.current.scrollTop = bodyRef.current.scrollHeight
+    }
+  }, [history, step])
+
+  function advanceStep(userAnswer: string, formUpdate: Partial<FormData>) {
+    const newForm = { ...form, ...formUpdate }
+    setHistory((prev) => [...prev, { system: currentStep.system, user: userAnswer }])
+    setForm(newForm)
+    setInputValue('')
+    setSelectedFields([])
+
+    if (step + 1 >= totalSteps) {
+      onSubmit(newForm as IntakeData)
+    } else {
+      setStep((s) => s + 1)
+    }
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!form.deadline) return
-    onSubmit(form)
+  function handleTextSubmit() {
+    if (!inputValue.trim()) return
+    advanceStep(inputValue.trim(), { [currentStep.id]: inputValue.trim() })
   }
 
-  const isValid = form.deadline.length > 0
+  function handleSelectOption(value: string, label: string) {
+    advanceStep(label, { [currentStep.id]: value })
+  }
+
+  function handleFieldToggle(value: string) {
+    setSelectedFields((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+    )
+  }
+
+  function handleFieldsConfirm() {
+    const labels = fields
+      .filter((f) => selectedFields.includes(f.id))
+      .map((f) => f.name)
+      .join(', ')
+    advanceStep(labels || '(none selected)', { fieldIds: selectedFields })
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter') {
+      if (currentStep.type === 'text') handleTextSubmit()
+      if (currentStep.type === 'date') handleTextSubmit()
+      if (currentStep.type === 'multiselect') handleFieldsConfirm()
+    }
+  }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="min-h-screen flex items-start justify-center px-4 py-16"
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-4 py-16"
+      style={{ background: '#060d14', fontFamily: "'Courier New', Courier, monospace" }}
     >
-      <div className="w-full max-w-xl">
-        {/* Header */}
-        <div className="mb-10">
-          <p className="ds-label text-muted-foreground mb-2">Studyond — Thesis GPS</p>
-          <h1 className="ds-title-lg mb-3">{INTAKE.title}</h1>
-          <p className="ds-body text-muted-foreground">{INTAKE.subtitle}</p>
+      {/* Title */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+        className="text-center mb-10"
+      >
+        <h1
+          className="font-bold uppercase mb-2"
+          style={{ fontSize: '3rem', color: '#ffffff', letterSpacing: '0.2em' }}
+        >
+          Thesis GPS
+        </h1>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+          className="text-sm uppercase"
+          style={{ color: '#00bcd4', letterSpacing: '0.25em' }}
+        >
+          Your AI Thesis Assistant
+        </motion.p>
+      </motion.div>
+
+      {/* Terminal window */}
+      <motion.div
+        initial={{ opacity: 0, y: 30, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, delay: 0.2, ease: 'easeOut' }}
+        className="w-full max-w-2xl overflow-hidden"
+        style={{ border: '1px solid #1a3a4a', borderRadius: '2px', background: '#0d1b24' }}
+      >
+        {/* Header bar */}
+        <div
+          className="flex items-center justify-between px-4 py-2"
+          style={{ background: '#0a1520', borderBottom: '1px solid #1a3a4a' }}
+        >
+          <div className="flex items-center gap-2">
+            <span style={{ color: '#00bcd4', fontSize: '12px' }}>▣</span>
+            <span className="text-xs" style={{ color: '#00bcd4', letterSpacing: '0.2em' }}>
+              THESIS_GPS // CALIBRATION_MODE
+            </span>
+          </div>
+          <motion.div
+            animate={{ opacity: [1, 0.3, 1] }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            style={{ width: '12px', height: '12px', background: '#00bcd4', borderRadius: '2px' }}
+          />
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Topic */}
-          <div>
-            <label className="ds-label block mb-1.5">{INTAKE.topicLabel}</label>
-            <input
-              type="text"
-              value={form.topic}
-              onChange={(e) => setForm((p) => ({ ...p, topic: e.target.value }))}
-              placeholder={INTAKE.topicPlaceholder}
-              className="w-full border border-border rounded-xl px-4 py-3 ds-body bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-            <p className="ds-caption text-muted-foreground mt-1.5">{INTAKE.topicHint}</p>
-          </div>
-
-          {/* University + Degree */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="ds-label block mb-1.5">{INTAKE.universityLabel}</label>
-              <input
-                type="text"
-                value={form.university}
-                onChange={(e) => setForm((p) => ({ ...p, university: e.target.value }))}
-                placeholder={INTAKE.universityPlaceholder}
-                className="w-full border border-border rounded-xl px-4 py-3 ds-body bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-            <div>
-              <label className="ds-label block mb-1.5">Degree level</label>
-              <select
-                value={form.degree}
-                onChange={(e) => setForm((p) => ({ ...p, degree: e.target.value as IntakeData['degree'] }))}
-                className="w-full border border-border rounded-xl px-4 py-3 ds-body bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value="bsc">Bachelor (BSc)</option>
-                <option value="msc">Master (MSc)</option>
-                <option value="phd">PhD</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Current Stage */}
-          <div>
-            <label className="ds-label block mb-2">{INTAKE.stageLabel}</label>
-            <div className="grid grid-cols-1 gap-2">
-              {STAGES.map((stage) => (
-                <button
-                  key={stage.id}
-                  type="button"
-                  onClick={() => setForm((p) => ({ ...p, currentStage: stage.id }))}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all duration-200 ${
-                    form.currentStage === stage.id
-                      ? 'border-foreground bg-secondary'
-                      : 'border-border hover:border-muted-foreground'
-                  }`}
-                >
-                  <span className="text-lg">{stage.icon}</span>
-                  <div>
-                    <p className="ds-label">{stage.shortLabel}</p>
-                    <p className="ds-caption text-muted-foreground">{stage.description}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Fields */}
-          <div>
-            <label className="ds-label block mb-2">Your fields of study</label>
-            <div className="flex flex-wrap gap-2">
-              {fields.map((f) => (
-                <button
-                  key={f.id}
-                  type="button"
-                  onClick={() => toggleField(f.id)}
-                  className={`px-3 py-1.5 rounded-full border ds-small transition-all duration-150 ${
-                    form.fieldIds.includes(f.id)
-                      ? 'border-foreground bg-foreground text-primary-foreground'
-                      : 'border-border hover:border-muted-foreground'
-                  }`}
-                >
-                  {f.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Deadline */}
-          <div>
-            <label className="ds-label block mb-1.5">{INTAKE.deadlineLabel}</label>
-            <input
-              type="date"
-              required
-              value={form.deadline}
-              onChange={(e) => setForm((p) => ({ ...p, deadline: e.target.value }))}
-              className="w-full border border-border rounded-xl px-4 py-3 ds-body bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={!isValid}
-            className="w-full bg-foreground text-primary-foreground rounded-full py-4 ds-label font-medium transition-opacity duration-150 disabled:opacity-40 hover:opacity-85"
+        {/* Terminal body */}
+        <div
+          ref={bodyRef}
+          className="p-6 space-y-5 overflow-y-auto scrollbar-hide"
+          style={{ minHeight: '420px', maxHeight: '520px' }}
+        >
+          {/* Boot message */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.5 }}
+            className="flex items-start gap-3"
           >
-            {INTAKE.submitButton}
-          </button>
-        </form>
-      </div>
-    </motion.div>
+            <span style={{ color: '#00bcd4', fontSize: '12px', marginTop: '2px' }}>⊙</span>
+            <div>
+              <p className="text-xs mb-1" style={{ color: '#00bcd4', letterSpacing: '0.15em' }}>
+                SYSTEM
+              </p>
+              <p className="text-sm" style={{ color: '#00bcd4' }}>
+                &gt; initializing coordinates...
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Conversation history */}
+          <AnimatePresence initial={false}>
+            {history.map((entry, i) => (
+              <motion.div
+                key={i}
+                variants={msgVariants}
+                initial="hidden"
+                animate="visible"
+                className="space-y-3"
+              >
+                {/* System line */}
+                <div className="flex items-start gap-3">
+                  <span style={{ color: '#00bcd4', fontSize: '12px', marginTop: '2px' }}>⊙</span>
+                  <div>
+                    <p
+                      className="text-xs mb-1"
+                      style={{ color: '#00bcd4', letterSpacing: '0.15em' }}
+                    >
+                      SYSTEM
+                    </p>
+                    <p className="text-sm" style={{ color: '#00bcd4' }}>
+                      &gt; {entry.system}
+                    </p>
+                  </div>
+                </div>
+                {/* User line */}
+                <motion.div
+                  initial={{ opacity: 0, x: 12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                  className="flex justify-end items-start gap-3"
+                >
+                  <div className="text-right">
+                    <p
+                      className="text-xs mb-1"
+                      style={{ color: '#3a6a7a', letterSpacing: '0.15em' }}
+                    >
+                      USER
+                    </p>
+                    <p className="text-sm" style={{ color: '#7ab4c4' }}>
+                      &gt; {entry.user}
+                    </p>
+                  </div>
+                  <span style={{ color: '#3a6a7a', fontSize: '12px', marginTop: '2px' }}>○</span>
+                </motion.div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
+          {/* Current step */}
+          <AnimatePresence mode="wait">
+            {step < totalSteps && (
+              <motion.div
+                key={step}
+                variants={msgVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="space-y-4"
+              >
+                {/* Question */}
+                <div className="flex items-start gap-3">
+                  <span style={{ color: '#00bcd4', fontSize: '12px', marginTop: '2px' }}>⊙</span>
+                  <div>
+                    <p
+                      className="text-xs mb-1"
+                      style={{ color: '#00bcd4', letterSpacing: '0.15em' }}
+                    >
+                      SYSTEM
+                    </p>
+                    <p className="text-sm" style={{ color: '#00bcd4' }}>
+                      &gt; {currentStep.system}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Select options */}
+                {currentStep.type === 'select' && (
+                  <motion.div
+                    className="pl-7 flex flex-wrap gap-2 pt-1"
+                    variants={optionContainerVariants}
+                    initial="hidden"
+                    animate="visible"
+                  >
+                    {currentStep.options?.map((opt) => (
+                      <motion.button
+                        key={opt.value}
+                        variants={optionVariants}
+                        onClick={() => handleSelectOption(opt.value, opt.label)}
+                        whileHover={{ scale: 1.04, backgroundColor: '#1a3a4a' }}
+                        whileTap={{ scale: 0.97 }}
+                        className="text-xs px-3 py-1"
+                        style={{
+                          border: '1px solid #1a3a4a',
+                          color: '#00bcd4',
+                          background: 'transparent',
+                          cursor: 'pointer',
+                          fontFamily: 'inherit',
+                        }}
+                      >
+                        [{opt.label}]
+                      </motion.button>
+                    ))}
+                  </motion.div>
+                )}
+
+                {/* Multiselect */}
+                {currentStep.type === 'multiselect' && (
+                  <motion.div
+                    className="pl-7 space-y-3 pt-1"
+                    variants={optionContainerVariants}
+                    initial="hidden"
+                    animate="visible"
+                  >
+                    <div className="flex flex-wrap gap-2">
+                      {currentStep.options?.map((opt) => {
+                        const selected = selectedFields.includes(opt.value)
+                        return (
+                          <motion.button
+                            key={opt.value}
+                            variants={optionVariants}
+                            onClick={() => handleFieldToggle(opt.value)}
+                            whileTap={{ scale: 0.96 }}
+                            className="text-xs px-3 py-1 transition-colors duration-150"
+                            style={{
+                              border: selected ? '1px solid #00bcd4' : '1px solid #1a3a4a',
+                              color: selected ? '#00bcd4' : '#3a6a7a',
+                              background: selected ? 'rgba(0,188,212,0.1)' : 'transparent',
+                              cursor: 'pointer',
+                              fontFamily: 'inherit',
+                            }}
+                          >
+                            {selected ? '[x]' : '[ ]'} {opt.label}
+                          </motion.button>
+                        )
+                      })}
+                    </div>
+                    <motion.button
+                      variants={optionVariants}
+                      onClick={handleFieldsConfirm}
+                      whileHover={{ backgroundColor: 'rgba(0,188,212,0.15)' }}
+                      whileTap={{ scale: 0.97 }}
+                      className="text-xs px-4 py-1"
+                      style={{
+                        border: '1px solid #00bcd4',
+                        color: '#00bcd4',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      [CONFIRM]
+                    </motion.button>
+                  </motion.div>
+                )}
+
+                {/* Text / Date input */}
+                {(currentStep.type === 'text' || currentStep.type === 'date') && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2, duration: 0.3 }}
+                    className="pl-7 flex items-center gap-2 pt-1"
+                  >
+                    <span className="text-sm" style={{ color: '#00bcd4' }}>
+                      &gt;
+                    </span>
+                    <input
+                      ref={inputRef}
+                      type={currentStep.type === 'date' ? 'date' : 'text'}
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder={currentStep.type === 'date' ? '' : 'type and press Enter...'}
+                      className="flex-1 text-sm outline-none pb-0.5"
+                      style={{
+                        background: 'transparent',
+                        color: '#7ab4c4',
+                        borderBottom: '1px solid #1a3a4a',
+                        fontFamily: 'inherit',
+                        caretColor: '#00bcd4',
+                      }}
+                      autoComplete="off"
+                      spellCheck={false}
+                    />
+                    <motion.span
+                      animate={{ opacity: [1, 0, 1] }}
+                      transition={{ duration: 1, repeat: Infinity }}
+                      style={{
+                        display: 'inline-block',
+                        width: '8px',
+                        height: '14px',
+                        background: '#00bcd4',
+                        flexShrink: 0,
+                      }}
+                    />
+                  </motion.div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Footer */}
+        <div
+          className="flex items-center justify-between px-4 py-2"
+          style={{ background: '#0a1520', borderTop: '1px solid #1a3a4a' }}
+        >
+          <div className="flex items-center gap-2">
+            <motion.span
+              animate={{ opacity: [1, 0.2, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+              className="inline-block rounded-full"
+              style={{ width: '6px', height: '6px', background: '#00bcd4', flexShrink: 0 }}
+            />
+            <span className="text-xs" style={{ color: '#00bcd4', letterSpacing: '0.2em' }}>
+              AWAITING INPUT
+            </span>
+          </div>
+          <motion.span
+            key={step}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="text-xs"
+            style={{ color: '#3a6a7a' }}
+          >
+            Node {Math.min(step + 1, totalSteps)}/{totalSteps}
+          </motion.span>
+        </div>
+      </motion.div>
+    </div>
   )
 }

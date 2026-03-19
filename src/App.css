@@ -141,3 +141,15 @@ html {
 
 .ds-layout-narrow     { @apply md:max-w-3xl; }
 .ds-layout-onboarding { @apply md:max-w-3xl xl:max-w-7xl; }
+
+/* ==========================================================================
+   Scrollbar utilities
+   ========================================================================== */
+
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
