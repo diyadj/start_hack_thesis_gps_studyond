@@ -38,6 +38,7 @@ interface JourneyStore {
 const DEFAULT_STAGES: StageState[] = [
   { id: 'orientation', status: 'not_started' },
   { id: 'supervisor', status: 'not_started' },
+  { id: 'application', status: 'not_started' },
   { id: 'planning', status: 'not_started' },
   { id: 'execution', status: 'not_started' },
   { id: 'writing', status: 'not_started' },
@@ -47,7 +48,7 @@ const DEFAULT_STAGES: StageState[] = [
 
 // Maps the intake's currentStage value to the stages array
 function buildInitialStages(currentStage: string): StageState[] {
-  const stageOrder = ['orientation', 'supervisor', 'planning', 'execution', 'writing', 'submission', 'apply_jobs']
+  const stageOrder = ['orientation', 'supervisor', 'application', 'planning', 'execution', 'writing', 'submission', 'apply_jobs']
   const currentIndex = stageOrder.indexOf(currentStage)
 
   return stageOrder.map((id, index) => ({
@@ -78,7 +79,7 @@ export const useJourneyStore = create<JourneyStore>()(
 
       markStageDone: (stageId) => {
         set((state) => {
-          const stageOrder = ['orientation', 'supervisor', 'planning', 'execution', 'writing', 'submission', 'apply_jobs']
+          const stageOrder = ['orientation', 'supervisor', 'application', 'planning', 'execution', 'writing', 'submission', 'apply_jobs']
           const doneIndex = stageOrder.indexOf(stageId)
 
           return {

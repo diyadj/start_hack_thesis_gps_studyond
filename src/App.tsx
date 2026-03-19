@@ -1,5 +1,6 @@
 import './App.css'
 import { useEffect, useState } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 import { useJourneyStore } from '@/store/journeyStore'
 import { LandingPage } from '@/components/landing/LandingPage'
 import { IntakeForm } from '@/components/intake/IntakeForm'
@@ -40,9 +41,11 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 flex">
-      {/* Side Navigation - Always Visible */}
-      <nav className="w-72 border-r border-gray-200 bg-white fixed left-0 top-0 h-screen flex flex-col overflow-y-auto">
+    <>
+      <Analytics />
+      <div className="min-h-screen bg-white text-gray-900 flex">
+        {/* Side Navigation - Always Visible */}
+        <nav className="w-72 border-r border-gray-200 bg-white fixed left-0 top-0 h-screen flex flex-col overflow-y-auto">
         {/* Logo */}
         <div className="px-6 py-6 border-b border-gray-200">
           <img src={StudyondLogo} alt="Studyond" className="h-8 object-contain" />
@@ -153,5 +156,6 @@ export default function App() {
         )}
       </div>
     </div>
+    </>
   )
 }

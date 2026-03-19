@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Compass, User, Calendar, Zap, PenLine, Check, FileCheck2, Briefcase } from 'lucide-react'
+import { Compass, User, Calendar, Zap, PenLine, Check, FileCheck2, Briefcase, ClipboardCheck } from 'lucide-react'
 import { STAGES, URGENCY_MESSAGES } from '@/lib/copy'
 import { weeksUntil, getUrgency } from '@/lib/utils'
 import { useJourneyStore, type StageState } from '@/store/journeyStore'
@@ -12,7 +12,7 @@ import { getFieldName, getUniversityName } from '@/data'
 import mapImage from '@/assets/map.png'
 import contourMapImage from '@/assets/Contour-Map.svg'
 
-type StageId = 'orientation' | 'supervisor' | 'planning' | 'execution' | 'writing' | 'submission' | 'apply_jobs'
+type StageId = 'orientation' | 'supervisor' | 'application' | 'planning' | 'execution' | 'writing' | 'submission' | 'apply_jobs'
 
 type PlannerItem = {
   id: string
@@ -25,6 +25,7 @@ type PlannerItem = {
 const STAGE_ICONS: Record<StageId, React.ElementType> = {
   orientation: Compass,
   supervisor:  User,
+  application: ClipboardCheck,
   planning:    Calendar,
   execution:   Zap,
   writing:     PenLine,
@@ -40,6 +41,7 @@ interface JourneyMapProps {
 const STAGE_TASKS: Record<string, string[]> = {
   orientation: ['Define research question', 'Review literature scope', 'Align with advisor interests'],
   supervisor:  ['Review publications list (2022–2024)', 'Map project scope to lab resources', 'Draft initial outreach communication'],
+  application: ['Shortlist 3 company projects and 2 university projects', 'Submit applications with tailored motivation', 'Track responses and compare offer fit'],
   planning:    ['Draft methodology outline', 'Create project timeline', 'Confirm company partner alignment'],
   execution:   ['Conduct expert interviews', 'Collect & clean dataset', 'Iterate on findings with advisor'],
   writing:     ['Draft introduction & conclusion', 'Peer review round', 'Final formatting & citation check'],
@@ -49,13 +51,14 @@ const STAGE_TASKS: Record<string, string[]> = {
 
 // Node positions in the SVG coordinate space (viewBox 0 0 240 150)
 const NODE_POSITIONS = [
-  { id: 'orientation', x: 24,  y: 112, label: 'NODE_ORIENT', stageName: 'ORIENTATION' },
-  { id: 'supervisor',  x: 56,  y: 72,  label: 'NODE_SUPV',   stageName: 'SUPERVISOR'  },
-  { id: 'planning',    x: 92,  y: 96,  label: 'NODE_PLAN',   stageName: 'PLANNING'    },
-  { id: 'execution',   x: 128, y: 58,  label: 'NODE_EXEC',   stageName: 'EXECUTION'   },
-  { id: 'writing',     x: 162, y: 88,  label: 'NODE_WRITE',  stageName: 'WRITING'     },
-  { id: 'submission',  x: 196, y: 60,  label: 'NODE_SUBMIT', stageName: 'SUBMISSION'  },
-  { id: 'apply_jobs',  x: 226, y: 86,  label: 'NODE_JOBS',   stageName: 'JOBS'        },
+  { id: 'orientation', x: 20,  y: 112, label: 'NODE_ORIENT', stageName: 'ORIENTATION' },
+  { id: 'supervisor',  x: 48,  y: 74,  label: 'NODE_SUPV',   stageName: 'SUPERVISOR'  },
+  { id: 'application', x: 76,  y: 102, label: 'NODE_APPLY',  stageName: 'APPLICATION' },
+  { id: 'planning',    x: 104, y: 68,  label: 'NODE_PLAN',   stageName: 'PLANNING'    },
+  { id: 'execution',   x: 136, y: 100, label: 'NODE_EXEC',   stageName: 'EXECUTION'   },
+  { id: 'writing',     x: 166, y: 66,  label: 'NODE_WRITE',  stageName: 'WRITING'     },
+  { id: 'submission',  x: 196, y: 98,  label: 'NODE_SUBMIT', stageName: 'SUBMISSION'  },
+  { id: 'apply_jobs',  x: 226, y: 70,  label: 'NODE_JOBS',   stageName: 'JOBS'        },
 ]
 
 
@@ -100,6 +103,7 @@ export function JourneyMap({ onStuck, onReset }: JourneyMapProps) {
     intake.topic,
     intake.fieldIds
   )
+  const applicationRecommendations = useRecommendations('application', intake.topic, intake.fieldIds)
   const supervisorRecommendations = useRecommendations('supervisor', intake.topic, intake.fieldIds)
   const activeStageId = (activeStage?.id as StageId | undefined) ?? 'orientation'
 
@@ -213,6 +217,7 @@ export function JourneyMap({ onStuck, onReset }: JourneyMapProps) {
           <StageWorkspace
             activeStageId={((selectedStageId ?? activeStageId) as StageId)}
             topic={intake.topic}
+            applicationRecommendations={applicationRecommendations}
             supervisorRecommendations={supervisorRecommendations}
             plannerItems={plannerItems}
             borderColor={borderColor}

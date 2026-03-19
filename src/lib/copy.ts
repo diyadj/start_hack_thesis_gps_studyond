@@ -20,6 +20,14 @@ export const STAGES = [
     weeks: 'Weeks 2-8',
   },
   {
+    id: 'application',
+    label: 'Applying to Projects',
+    shortLabel: 'Application',
+    description: 'Choose and apply to a company project or a university project that fits you best',
+    icon: '🧩',
+    weeks: 'Weeks 6-10',
+  },
+  {
     id: 'planning',
     label: 'Building Your Plan',
     shortLabel: 'Planning',
