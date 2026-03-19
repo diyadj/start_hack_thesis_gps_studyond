@@ -151,10 +151,27 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
     }
   }
 
+  // Color theme
+  const T = {
+    pageBg:        '#f0f4f8',
+    terminalBg:    '#ffffff',
+    barBg:         '#ffffff',
+    border:        '#e2e8f0',
+    accent:        '#2563eb',
+    accentMuted:   '#3b82f6',
+    userText:      '#1e40af',
+    userMuted:     '#94a3b8',
+    inputText:     '#1e293b',
+    titleColor:    '#0f172a',
+    subtitleColor: '#2563eb',
+    hoverBg:       '#eff6ff',
+    selectedBg:    'rgba(37,99,235,0.08)',
+  }
+
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center px-4 py-16"
-      style={{ background: '#060d14', fontFamily: "'Courier New', Courier, monospace" }}
+      style={{ background: T.pageBg, fontFamily: "'Courier New', Courier, monospace" }}
     >
       {/* Title */}
       <motion.div
@@ -165,7 +182,7 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
       >
         <h1
           className="font-bold uppercase mb-2"
-          style={{ fontSize: '3rem', color: '#ffffff', letterSpacing: '0.2em' }}
+          style={{ fontSize: '3rem', color: T.titleColor, letterSpacing: '0.2em' }}
         >
           Thesis GPS
         </h1>
@@ -174,7 +191,7 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4, duration: 0.5 }}
           className="text-sm uppercase"
-          style={{ color: '#00bcd4', letterSpacing: '0.25em' }}
+          style={{ color: T.subtitleColor, letterSpacing: '0.25em' }}
         >
           Your AI Thesis Assistant
         </motion.p>
@@ -186,23 +203,23 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5, delay: 0.2, ease: 'easeOut' }}
         className="w-full max-w-2xl overflow-hidden"
-        style={{ border: '1px solid #1a3a4a', borderRadius: '2px', background: '#0d1b24' }}
+        style={{ border: `1px solid ${T.border}`, borderRadius: '2px', background: T.terminalBg }}
       >
         {/* Header bar */}
         <div
           className="flex items-center justify-between px-4 py-2"
-          style={{ background: '#0a1520', borderBottom: '1px solid #1a3a4a' }}
+          style={{ background: T.barBg, borderBottom: `1px solid ${T.border}` }}
         >
           <div className="flex items-center gap-2">
-            <span style={{ color: '#00bcd4', fontSize: '12px' }}>▣</span>
-            <span className="text-xs" style={{ color: '#00bcd4', letterSpacing: '0.2em' }}>
+            <span style={{ color: T.accent, fontSize: '12px' }}>▣</span>
+            <span className="text-xs" style={{ color: T.accent, letterSpacing: '0.2em' }}>
               THESIS_GPS // CALIBRATION_MODE
             </span>
           </div>
           <motion.div
             animate={{ opacity: [1, 0.3, 1] }}
             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-            style={{ width: '12px', height: '12px', background: '#00bcd4', borderRadius: '2px' }}
+            style={{ width: '12px', height: '12px', background: T.accent, borderRadius: '2px' }}
           />
         </div>
 
@@ -219,12 +236,12 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
             transition={{ duration: 0.4, delay: 0.5 }}
             className="flex items-start gap-3"
           >
-            <span style={{ color: '#00bcd4', fontSize: '12px', marginTop: '2px' }}>⊙</span>
+            <span style={{ color: T.accentMuted, fontSize: '12px', marginTop: '2px' }}>⊙</span>
             <div>
-              <p className="text-xs mb-1" style={{ color: '#00bcd4', letterSpacing: '0.15em' }}>
+              <p className="text-xs mb-1" style={{ color: T.accentMuted, letterSpacing: '0.15em' }}>
                 SYSTEM
               </p>
-              <p className="text-sm" style={{ color: '#00bcd4' }}>
+              <p className="text-sm" style={{ color: T.accent }}>
                 &gt; initializing coordinates...
               </p>
             </div>
@@ -242,15 +259,15 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
               >
                 {/* System line */}
                 <div className="flex items-start gap-3">
-                  <span style={{ color: '#00bcd4', fontSize: '12px', marginTop: '2px' }}>⊙</span>
+                  <span style={{ color: T.accentMuted, fontSize: '12px', marginTop: '2px' }}>⊙</span>
                   <div>
                     <p
                       className="text-xs mb-1"
-                      style={{ color: '#00bcd4', letterSpacing: '0.15em' }}
+                      style={{ color: T.accentMuted, letterSpacing: '0.15em' }}
                     >
                       SYSTEM
                     </p>
-                    <p className="text-sm" style={{ color: '#00bcd4' }}>
+                    <p className="text-sm" style={{ color: T.accent }}>
                       &gt; {entry.system}
                     </p>
                   </div>
@@ -265,15 +282,15 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
                   <div className="text-right">
                     <p
                       className="text-xs mb-1"
-                      style={{ color: '#3a6a7a', letterSpacing: '0.15em' }}
+                      style={{ color: T.userMuted, letterSpacing: '0.15em' }}
                     >
                       USER
                     </p>
-                    <p className="text-sm" style={{ color: '#7ab4c4' }}>
+                    <p className="text-sm" style={{ color: T.userText }}>
                       &gt; {entry.user}
                     </p>
                   </div>
-                  <span style={{ color: '#3a6a7a', fontSize: '12px', marginTop: '2px' }}>○</span>
+                  <span style={{ color: T.userMuted, fontSize: '12px', marginTop: '2px' }}>○</span>
                 </motion.div>
               </motion.div>
             ))}
@@ -292,15 +309,15 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
               >
                 {/* Question */}
                 <div className="flex items-start gap-3">
-                  <span style={{ color: '#00bcd4', fontSize: '12px', marginTop: '2px' }}>⊙</span>
+                  <span style={{ color: T.accentMuted, fontSize: '12px', marginTop: '2px' }}>⊙</span>
                   <div>
                     <p
                       className="text-xs mb-1"
-                      style={{ color: '#00bcd4', letterSpacing: '0.15em' }}
+                      style={{ color: T.accentMuted, letterSpacing: '0.15em' }}
                     >
                       SYSTEM
                     </p>
-                    <p className="text-sm" style={{ color: '#00bcd4' }}>
+                    <p className="text-sm" style={{ color: T.accent }}>
                       &gt; {currentStep.system}
                     </p>
                   </div>
@@ -319,12 +336,12 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
                         key={opt.value}
                         variants={optionVariants}
                         onClick={() => handleSelectOption(opt.value, opt.label)}
-                        whileHover={{ scale: 1.04, backgroundColor: '#1a3a4a' }}
+                        whileHover={{ scale: 1.04, backgroundColor: T.hoverBg }}
                         whileTap={{ scale: 0.97 }}
                         className="text-xs px-3 py-1"
                         style={{
-                          border: '1px solid #1a3a4a',
-                          color: '#00bcd4',
+                          border: `1px solid ${T.border}`,
+                          color: T.accent,
                           background: 'transparent',
                           cursor: 'pointer',
                           fontFamily: 'inherit',
@@ -355,9 +372,9 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
                             whileTap={{ scale: 0.96 }}
                             className="text-xs px-3 py-1 transition-colors duration-150"
                             style={{
-                              border: selected ? '1px solid #00bcd4' : '1px solid #1a3a4a',
-                              color: selected ? '#00bcd4' : '#3a6a7a',
-                              background: selected ? 'rgba(0,188,212,0.1)' : 'transparent',
+                              border: selected ? `1px solid ${T.accent}` : `1px solid ${T.border}`,
+                              color: selected ? T.accent : T.userMuted,
+                              background: selected ? T.selectedBg : 'transparent',
                               cursor: 'pointer',
                               fontFamily: 'inherit',
                             }}
@@ -370,12 +387,12 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
                     <motion.button
                       variants={optionVariants}
                       onClick={handleFieldsConfirm}
-                      whileHover={{ backgroundColor: 'rgba(0,188,212,0.15)' }}
+                      whileHover={{ backgroundColor: T.hoverBg }}
                       whileTap={{ scale: 0.97 }}
                       className="text-xs px-4 py-1"
                       style={{
-                        border: '1px solid #00bcd4',
-                        color: '#00bcd4',
+                        border: `1px solid ${T.accent}`,
+                        color: T.accent,
                         background: 'transparent',
                         cursor: 'pointer',
                         fontFamily: 'inherit',
@@ -394,7 +411,7 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
                     transition={{ delay: 0.2, duration: 0.3 }}
                     className="pl-7 flex items-center gap-2 pt-1"
                   >
-                    <span className="text-sm" style={{ color: '#00bcd4' }}>
+                    <span className="text-sm" style={{ color: T.accent }}>
                       &gt;
                     </span>
                     <input
@@ -407,10 +424,10 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
                       className="flex-1 text-sm outline-none pb-0.5"
                       style={{
                         background: 'transparent',
-                        color: '#7ab4c4',
-                        borderBottom: '1px solid #1a3a4a',
+                        color: T.inputText,
+                        borderBottom: `1px solid ${T.border}`,
                         fontFamily: 'inherit',
-                        caretColor: '#00bcd4',
+                        caretColor: T.accent,
                       }}
                       autoComplete="off"
                       spellCheck={false}
@@ -422,7 +439,7 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
                         display: 'inline-block',
                         width: '8px',
                         height: '14px',
-                        background: '#00bcd4',
+                        background: T.accent,
                         flexShrink: 0,
                       }}
                     />
@@ -436,16 +453,16 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
         {/* Footer */}
         <div
           className="flex items-center justify-between px-4 py-2"
-          style={{ background: '#0a1520', borderTop: '1px solid #1a3a4a' }}
+          style={{ background: T.barBg, borderTop: `1px solid ${T.border}` }}
         >
           <div className="flex items-center gap-2">
             <motion.span
               animate={{ opacity: [1, 0.2, 1] }}
               transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
               className="inline-block rounded-full"
-              style={{ width: '6px', height: '6px', background: '#00bcd4', flexShrink: 0 }}
+              style={{ width: '6px', height: '6px', background: T.accent, flexShrink: 0 }}
             />
-            <span className="text-xs" style={{ color: '#00bcd4', letterSpacing: '0.2em' }}>
+            <span className="text-xs" style={{ color: T.accent, letterSpacing: '0.2em' }}>
               AWAITING INPUT
             </span>
           </div>
@@ -455,7 +472,7 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
             className="text-xs"
-            style={{ color: '#3a6a7a' }}
+            style={{ color: T.userMuted }}
           >
             Node {Math.min(step + 1, totalSteps)}/{totalSteps}
           </motion.span>
