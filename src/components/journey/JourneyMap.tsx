@@ -754,8 +754,11 @@ function NodeMap({ stages, onSelect }: { stages: StageState[]; onSelect: (id: st
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerSize, setContainerSize] = useState({ w: 800, h: 500 })
   const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>({})
+  const [pan, setPan] = useState({ x: 0, y: 0 })
   const dragRef = useRef<{ id: string; startX: number; startY: number; baseX: number; baseY: number } | null>(null)
+  const panRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null)
   const didDrag = useRef(false)
+  const didPan = useRef(false)
 
   useEffect(() => {
     const el = containerRef.current
@@ -794,7 +797,8 @@ function NodeMap({ stages, onSelect }: { stages: StageState[]; onSelect: (id: st
     return [`M ${from.pos.x} ${from.pos.y} C ${cp1x} ${from.pos.y}, ${cp2x} ${to.pos.y}, ${to.pos.x} ${to.pos.y}`]
   })
 
-  function handlePointerDown(e: React.PointerEvent<HTMLButtonElement>, id: string) {
+  // ── Node drag handlers ──
+  function handleNodePointerDown(e: React.PointerEvent<HTMLButtonElement>, id: string) {
     e.currentTarget.setPointerCapture(e.pointerId)
     e.stopPropagation()
     didDrag.current = false
@@ -802,7 +806,7 @@ function NodeMap({ stages, onSelect }: { stages: StageState[]; onSelect: (id: st
     dragRef.current = { id, startX: e.clientX, startY: e.clientY, baseX: pos.x, baseY: pos.y }
   }
 
-  function handlePointerMove(e: React.PointerEvent<HTMLButtonElement>) {
+  function handleNodePointerMove(e: React.PointerEvent<HTMLButtonElement>) {
     if (!dragRef.current) return
     const { id, startX, startY, baseX, baseY } = dragRef.current
     const dx = e.clientX - startX
@@ -811,11 +815,30 @@ function NodeMap({ stages, onSelect }: { stages: StageState[]; onSelect: (id: st
     setPositions(prev => ({ ...prev, [id]: { x: baseX + dx, y: baseY + dy } }))
   }
 
-  function handlePointerUp(e: React.PointerEvent<HTMLButtonElement>, id: string) {
+  function handleNodePointerUp(e: React.PointerEvent<HTMLButtonElement>, id: string) {
     e.stopPropagation()
     dragRef.current = null
     if (!didDrag.current) onSelect(id)
     didDrag.current = false
+  }
+
+  // ── Map pan handlers (fires on background, not on nodes thanks to stopPropagation) ──
+  function handleMapPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    e.currentTarget.setPointerCapture(e.pointerId)
+    didPan.current = false
+    panRef.current = { startX: e.clientX, startY: e.clientY, baseX: pan.x, baseY: pan.y }
+  }
+
+  function handleMapPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!panRef.current) return
+    const dx = e.clientX - panRef.current.startX
+    const dy = e.clientY - panRef.current.startY
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) didPan.current = true
+    setPan({ x: panRef.current.baseX + dx, y: panRef.current.baseY + dy })
+  }
+
+  function handleMapPointerUp() {
+    panRef.current = null
   }
 
   const accentBlue = '#2563EB'
@@ -884,58 +907,77 @@ function NodeMap({ stages, onSelect }: { stages: StageState[]; onSelect: (id: st
           }}
         />
 
-        {/* SVG lines — connect completed stages */}
-        <svg
-          viewBox={`0 0 ${containerSize.w} ${containerSize.h}`}
+        {/* Pannable layer: SVG lines + nodes */}
+        <div
+          onPointerDown={handleMapPointerDown}
+          onPointerMove={handleMapPointerMove}
+          onPointerUp={handleMapPointerUp}
           style={{
             position: 'absolute',
             inset: 0,
-            width: '100%',
-            height: '100%',
-            pointerEvents: 'none',
+            cursor: panRef.current ? 'grabbing' : 'grab',
             zIndex: 1,
           }}
         >
-          {segments.map((d, i) => (
-            <path
-              key={i}
-              d={d}
-              fill="none"
-              stroke={accentBlue}
-              strokeWidth="2"
-              opacity={0.3}
-              strokeLinecap="round"
-            />
-          ))}
-        </svg>
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              transform: `translate(${pan.x}px, ${pan.y}px)`,
+              willChange: 'transform',
+            }}
+          >
+            {/* SVG lines — connect completed stages */}
+            <svg
+              viewBox={`0 0 ${containerSize.w} ${containerSize.h}`}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+              }}
+            >
+              {segments.map((d, i) => (
+                <path
+                  key={i}
+                  d={d}
+                  fill="none"
+                  stroke={accentBlue}
+                  strokeWidth="2"
+                  opacity={0.3}
+                  strokeLinecap="round"
+                />
+              ))}
+            </svg>
 
-        {/* Draggable nodes */}
-        <div style={{ position: 'relative', width: '100%', height: '100%', zIndex: 2 }}>
-          {points.map((p) => {
-            const isDone = p.status === 'done'
-            const isAct  = p.status === 'active'
-            const Icon   = STAGE_ICONS[p.id as StageId]
-            return (
-              <div
-                key={p.id}
-                style={{
-                  position: 'absolute',
-                  left: p.pos.x,
-                  top:  p.pos.y,
-                  transform: 'translate(-50%, -50%)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 6,
-                  userSelect: 'none',
-                }}
-              >
-                <motion.button
-                  whileHover={{ scale: 1.12 }}
-                  whileTap={{ scale: 0.95 }}
-                  onPointerDown={(e) => handlePointerDown(e, p.id)}
-                  onPointerMove={handlePointerMove}
-                  onPointerUp={(e) => handlePointerUp(e, p.id)}
+            {/* Nodes */}
+            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+              {points.map((p) => {
+                const isDone = p.status === 'done'
+                const isAct  = p.status === 'active'
+                const Icon   = STAGE_ICONS[p.id as StageId]
+                return (
+                  <div
+                    key={p.id}
+                    style={{
+                      position: 'absolute',
+                      left: p.pos.x,
+                      top:  p.pos.y,
+                      transform: 'translate(-50%, -50%)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 6,
+                      userSelect: 'none',
+                    }}
+                  >
+                    <motion.button
+                      whileHover={{ scale: 1.12 }}
+                      whileTap={{ scale: 0.95 }}
+                      onPointerDown={(e) => handleNodePointerDown(e, p.id)}
+                      onPointerMove={handleNodePointerMove}
+                      onPointerUp={(e) => handleNodePointerUp(e, p.id)}
                   style={{
                     width: 44,
                     height: 44,
@@ -983,8 +1025,10 @@ function NodeMap({ stages, onSelect }: { stages: StageState[]; onSelect: (id: st
               </div>
             )
           })}
-        </div>
-      </div>
+            </div>{/* /nodes */}
+          </div>{/* /transform */}
+        </div>{/* /pannable */}
+      </div>{/* /containerRef */}
     </div>
   )
 }
