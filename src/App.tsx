@@ -34,6 +34,11 @@ export default function App() {
     setAppView('journey')
   }
 
+  const handleResetJourney = () => {
+    setStuckStageId(null)
+    setAppView('intake')
+  }
+
   return (
     <div className="min-h-screen bg-white text-gray-900 flex">
       {/* Side Navigation - Always Visible */}
@@ -134,7 +139,10 @@ export default function App() {
         ) : (
           <>
             {/* Journey map — owns its own top bar */}
-            <JourneyMap onStuck={(id) => setStuckStageId(id)} />
+            <JourneyMap
+              onStuck={(id) => setStuckStageId(id)}
+              onReset={handleResetJourney}
+            />
 
             {/* Stuck dialog */}
             <StuckDialog

@@ -10,6 +10,7 @@ import { useMatches } from '@/hooks/useMatches'
 import { useRecommendations } from '@/hooks/useRecommendations'
 import { getFieldName, getUniversityName } from '@/data'
 import mapImage from '@/assets/map.png'
+import contourMapImage from '@/assets/Contour-Map.svg'
 
 type StageId = 'orientation' | 'supervisor' | 'planning' | 'execution' | 'writing' | 'submission' | 'apply_jobs'
 
@@ -33,6 +34,7 @@ const STAGE_ICONS: Record<StageId, React.ElementType> = {
 
 interface JourneyMapProps {
   onStuck: (stageId: string) => void
+  onReset?: () => void
 }
 
 const STAGE_TASKS: Record<string, string[]> = {
@@ -71,7 +73,7 @@ const cardVariants = {
   exit:   { opacity: 0, x: -20, transition: { duration: 0.2 } },
 }
 
-export function JourneyMap({ onStuck }: JourneyMapProps) {
+export function JourneyMap({ onStuck, onReset }: JourneyMapProps) {
   const { intake, stages, markStageDone, resetJourney } = useJourneyStore()
   const [checkedTasks, setCheckedTasks] = useState<Record<string, boolean>>({})
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null)
@@ -160,7 +162,10 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
             </div>
           </div>
           <button
-            onClick={resetJourney}
+            onClick={() => {
+              resetJourney()
+              onReset?.()
+            }}
             className="ds-label px-4 py-2 rounded transition-colors"
             style={{
               color: accentBlue,
@@ -837,37 +842,47 @@ function NodeMap({ stages, onSelect }: { stages: StageState[]; onSelect: (id: st
           boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
         }}
       >
-        {/* Background with map image at low opacity */}
+        {/* Base texture layer */}
         <img
           src={mapImage}
-          alt="topographic map"
+          alt="base map texture"
           draggable={false}
           style={{
             width: '100%',
             height: '100%',
             objectFit: 'cover',
             display: 'block',
-            opacity: 0.24,
+            opacity: 0.22,
             position: 'absolute',
             inset: 0,
           }}
         />
 
-        {/* Second pass to make the map texture more visible without reducing readability */}
+        {/* Primary contour layer with stronger visibility */}
         <img
-          src={mapImage}
-          alt="topographic map texture"
+          src={contourMapImage}
+          alt="topographic contour map"
           draggable={false}
           style={{
             width: '100%',
             height: '100%',
             objectFit: 'cover',
             display: 'block',
-            opacity: 0.1,
+            opacity: 0.62,
             position: 'absolute',
             inset: 0,
             mixBlendMode: 'multiply',
-            transform: 'scale(1.02)',
+            filter: 'contrast(1.35) brightness(0.88) saturate(0.75)',
+          }}
+        />
+
+        {/* Readability veil so nodes and labels stay clear */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.3) 100%)',
+            pointerEvents: 'none',
           }}
         />
 
