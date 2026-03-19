@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Compass, User, Calendar, Zap, PenLine, Check, FileCheck2, Briefcase } from 'lucide-react'
 import { STAGES, URGENCY_MESSAGES } from '@/lib/copy'
@@ -11,6 +11,14 @@ import { getFieldName, getUniversityName } from '@/data'
 import mapImage from '@/assets/map.png'
 
 type StageId = 'orientation' | 'supervisor' | 'planning' | 'execution' | 'writing' | 'submission' | 'apply_jobs'
+
+type PlannerItem = {
+  id: string
+  stageId: string
+  stageLabel: string
+  text: string
+  status: 'todo' | 'in_progress' | 'done'
+}
 
 const STAGE_ICONS: Record<StageId, React.ElementType> = {
   orientation: Compass,
@@ -89,6 +97,29 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
     intake.topic,
     intake.fieldIds
   )
+  const orientationRecommendations = useRecommendations('orientation', intake.topic, intake.fieldIds)
+  const supervisorRecommendations = useRecommendations('supervisor', intake.topic, intake.fieldIds)
+  const activeStageId = (activeStage?.id as StageId | undefined) ?? 'orientation'
+  const hasPassedSupervisor = stages.find((s) => s.id === 'supervisor')?.status === 'done'
+
+  const plannerItems = useMemo<PlannerItem[]>(() => {
+    const managedStages: StageId[] = ['planning', 'execution', 'writing', 'submission', 'apply_jobs']
+    return managedStages.flatMap((stageId) => {
+      const stageTasks = STAGE_TASKS[stageId] ?? []
+      return stageTasks.map((task, index) => {
+        const taskKey = `${stageId}-${index}`
+        const isDone = checkedTasks[taskKey] ?? false
+        const isInProgress = !isDone && activeStage?.id === stageId
+        return {
+          id: taskKey,
+          stageId,
+          stageLabel: STAGES.find((s) => s.id === stageId)?.shortLabel ?? stageId,
+          text: task,
+          status: isDone ? 'done' : isInProgress ? 'in_progress' : 'todo' as PlannerItem['status'],
+        }
+      })
+    })
+  }, [activeStage?.id, checkedTasks])
 
   function toggleTask(key: string) {
     setCheckedTasks((p) => ({ ...p, [key]: !p[key] }))
@@ -169,11 +200,12 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
       <div className="flex flex-1 overflow-hidden">
 
         {/* ── Main map area ── */}
-        <div className="flex-1 relative overflow-hidden border-r" style={{ borderColor }}>
-          <NodeMap stages={stages} onSelect={setSelectedStageId} />
+        <div className="flex-1 overflow-y-auto border-r" style={{ borderColor }}>
+          <div className="relative" style={{ height: 'min(68vh, 620px)', minHeight: 420 }}>
+            <NodeMap stages={stages} onSelect={setSelectedStageId} />
 
           {/* Stage detail overlay — positioned at top-right with z-index */}
-          <div className="absolute inset-0 flex items-start justify-end p-6 pointer-events-none" style={{ zIndex: 10 }}>
+            <div className="absolute inset-0 flex items-start justify-end p-3 sm:p-6 pointer-events-none" style={{ zIndex: 10 }}>
             <AnimatePresence mode="wait">
               {selectedMeta && selectedStage && (
                 <motion.div
@@ -182,14 +214,13 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  className="pointer-events-auto scrollbar-hide rounded-lg shadow-lg"
+                  className="pointer-events-auto scrollbar-hide rounded-lg shadow-lg mr-0 lg:mr-[280px]"
                   style={{
-                    width: 360,
+                    width: 'min(360px, calc(100vw - 24px))',
                     maxHeight: 'calc(100vh - 120px)',
                     overflowY: 'auto',
                     backgroundColor: bgColor,
                     border: `1px solid ${borderColor}`,
-                    marginRight: '280px', // Shift left to avoid right sidebar
                   }}
                 >
                   {/* Card header */}
@@ -491,7 +522,16 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
 
                     {/* Action buttons */}
                     {isActiveSelected && activeStage && (
-                      <div className="flex gap-2 flex-wrap border-t" style={{ borderColor, paddingTop: 16 }}>
+                      <div
+                        className="sticky bottom-0 flex gap-2 flex-wrap border-t"
+                        style={{
+                          borderColor,
+                          paddingTop: 12,
+                          marginTop: 8,
+                          backgroundColor: bgColor,
+                          paddingBottom: 4,
+                        }}
+                      >
                         <motion.button
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
@@ -520,7 +560,7 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
                           onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#F5F5F5' }}
                           onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent' }}
                         >
-                          Get Help
+                          I'm Stuck
                         </motion.button>
                       </div>
                     )}
@@ -529,11 +569,24 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
               )}
             </AnimatePresence>
           </div>
+          </div>
+
+          <StageWorkspace
+            activeStageId={activeStageId}
+            hasPassedSupervisor={hasPassedSupervisor}
+            orientationRecommendations={orientationRecommendations.topics}
+            supervisorRecommendations={supervisorRecommendations}
+            plannerItems={plannerItems}
+            borderColor={borderColor}
+            textColor={textColor}
+            mutedColor={mutedColor}
+            accentBlue={accentBlue}
+          />
         </div>
 
         {/* ── Right Sidebar: Navigator, Current Phase, Milestones ── */}
         <div
-          className="flex flex-col flex-shrink-0 overflow-y-auto bg-gray-50"
+          className="hidden lg:flex flex-col flex-shrink-0 overflow-y-auto bg-gray-50"
           style={{ width: 280, borderLeft: `1px solid ${borderColor}` }}
         >
           {/* Navigator Header */}
@@ -696,6 +749,224 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
 }
 
 // ── Topographic node map ───────────────────────────────────────────
+
+function StageWorkspace({
+  activeStageId,
+  hasPassedSupervisor,
+  orientationRecommendations,
+  supervisorRecommendations,
+  plannerItems,
+  borderColor,
+  textColor,
+  mutedColor,
+  accentBlue,
+}: {
+  activeStageId: StageId
+  hasPassedSupervisor: boolean
+  orientationRecommendations: Array<{
+    topic: { id: string; title: string; description: string; employment?: 'yes' | 'no' | 'open' }
+    relevance: string
+    employmentSignal?: 'yes' | 'no' | 'open'
+  }>
+  supervisorRecommendations: {
+    experts: Array<{
+      score: number
+      relevance: string
+      expert: { id: string; firstName: string; lastName: string; companyName?: string; title: string }
+    }>
+    supervisors: Array<{
+      score: number
+      relevance: string
+      supervisor: { id: string; firstName: string; lastName: string; title: string }
+    }>
+  }
+  plannerItems: Array<{
+    id: string
+    stageId: string
+    stageLabel: string
+    text: string
+    status: 'todo' | 'in_progress' | 'done'
+  }>
+  borderColor: string
+  textColor: string
+  mutedColor: string
+  accentBlue: string
+}) {
+  const topCompanies = Array.from(
+    new Map(
+      supervisorRecommendations.experts
+        .filter((r) => r.expert.companyName)
+        .map((r) => [r.expert.companyName as string, r])
+    ).values()
+  ).slice(0, 4)
+
+  const bestCompany = topCompanies[0]
+  const runnerUp = topCompanies[1]
+
+  const todoItems = plannerItems.filter((t) => t.status === 'todo')
+  const inProgressItems = plannerItems.filter((t) => t.status === 'in_progress')
+  const doneItems = plannerItems.filter((t) => t.status === 'done')
+
+  return (
+    <section className="px-4 sm:px-6 pb-8 pt-5" style={{ borderTop: `1px solid ${borderColor}` }}>
+      <div className="mb-4">
+        <h3 className="ds-title-sm font-semibold" style={{ color: textColor }}>
+          Stage Workspace
+        </h3>
+        <p className="ds-small" style={{ color: mutedColor }}>
+          Scroll for recommendations and project management tools for your current phase.
+        </p>
+      </div>
+
+      {activeStageId === 'orientation' && (
+        <div className="space-y-3">
+          <p className="ds-label font-semibold" style={{ color: textColor }}>Recommended Topics</p>
+          <div className="grid gap-3 md:grid-cols-2">
+            {orientationRecommendations.slice(0, 6).map((rec) => (
+              <article
+                key={rec.topic.id}
+                className="rounded-lg p-3"
+                style={{ border: `1px solid ${borderColor}`, backgroundColor: '#FFFFFF' }}
+              >
+                <p className="ds-small font-semibold" style={{ color: textColor }}>{rec.topic.title}</p>
+                <p className="ds-caption mt-1" style={{ color: mutedColor }}>
+                  {rec.topic.description.slice(0, 140)}...
+                </p>
+                <p className="ds-caption mt-2" style={{ color: mutedColor }}>{rec.relevance}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeStageId === 'supervisor' && (
+        <div className="space-y-4">
+          <p className="ds-label font-semibold" style={{ color: textColor }}>Top Sponsor / Company Matches</p>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            {topCompanies.length === 0 && (
+              <div className="rounded-lg p-3" style={{ border: `1px solid ${borderColor}`, backgroundColor: '#FFFFFF' }}>
+                <p className="ds-small" style={{ color: mutedColor }}>
+                  Add or refine your topic to unlock stronger company matching.
+                </p>
+              </div>
+            )}
+
+            {topCompanies.map((rec) => (
+              <article
+                key={rec.expert.id}
+                className="rounded-lg p-3"
+                style={{ border: `1px solid ${borderColor}`, backgroundColor: '#FFFFFF' }}
+              >
+                <p className="ds-small font-semibold" style={{ color: textColor }}>
+                  {rec.expert.companyName}
+                </p>
+                <p className="ds-caption mt-1" style={{ color: mutedColor }}>
+                  Contact: {rec.expert.firstName} {rec.expert.lastName} ({rec.expert.title})
+                </p>
+                <p className="ds-caption mt-1" style={{ color: mutedColor }}>
+                  Match score: {Math.round(rec.score * 100)}%
+                </p>
+                <p className="ds-caption mt-1" style={{ color: mutedColor }}>{rec.relevance}</p>
+              </article>
+            ))}
+          </div>
+
+          <div className="rounded-lg p-4" style={{ border: `1px solid ${borderColor}`, backgroundColor: '#F8FAFF' }}>
+            <p className="ds-label font-semibold" style={{ color: accentBlue }}>AI Quick Comparison</p>
+            <p className="ds-small mt-2" style={{ color: textColor }}>
+              {bestCompany
+                ? `Best fit right now is ${bestCompany.expert.companyName}. It has the strongest match score (${Math.round(bestCompany.score * 100)}%) and relevant contact availability through ${bestCompany.expert.firstName} ${bestCompany.expert.lastName}.`
+                : 'No clear company lead yet. Sharpen your topic title to get a better recommendation.'}
+            </p>
+            {runnerUp && (
+              <p className="ds-small mt-2" style={{ color: mutedColor }}>
+                Runner-up: {runnerUp.expert.companyName} (${Math.round(runnerUp.score * 100)}%).
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {hasPassedSupervisor && (
+        <div className="space-y-4 mt-6">
+          <p className="ds-label font-semibold" style={{ color: textColor }}>
+            Project Manager Board
+          </p>
+
+          <div className="grid gap-3 lg:grid-cols-3">
+            <KanbanColumn
+              title="To Do"
+              items={todoItems}
+              borderColor={borderColor}
+              textColor={textColor}
+              mutedColor={mutedColor}
+            />
+            <KanbanColumn
+              title="In Progress"
+              items={inProgressItems}
+              borderColor={borderColor}
+              textColor={textColor}
+              mutedColor={mutedColor}
+            />
+            <KanbanColumn
+              title="Done"
+              items={doneItems}
+              borderColor={borderColor}
+              textColor={textColor}
+              mutedColor={mutedColor}
+            />
+          </div>
+
+          <div className="rounded-lg p-4" style={{ border: `1px solid ${borderColor}`, backgroundColor: '#FFFFFF' }}>
+            <p className="ds-label font-semibold" style={{ color: textColor }}>Things you still need to do</p>
+            <ul className="mt-2 space-y-1">
+              {todoItems.slice(0, 8).map((item) => (
+                <li key={item.id} className="ds-small" style={{ color: mutedColor }}>
+                  • [{item.stageLabel}] {item.text}
+                </li>
+              ))}
+              {todoItems.length === 0 && (
+                <li className="ds-small" style={{ color: mutedColor }}>All tracked tasks are complete for now.</li>
+              )}
+            </ul>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
+function KanbanColumn({
+  title,
+  items,
+  borderColor,
+  textColor,
+  mutedColor,
+}: {
+  title: string
+  items: Array<{ id: string; stageLabel: string; text: string }>
+  borderColor: string
+  textColor: string
+  mutedColor: string
+}) {
+  return (
+    <div className="rounded-lg p-3" style={{ border: `1px solid ${borderColor}`, backgroundColor: '#FFFFFF' }}>
+      <p className="ds-small font-semibold" style={{ color: textColor }}>{title}</p>
+      <div className="mt-2 space-y-2">
+        {items.slice(0, 6).map((item) => (
+          <article key={item.id} className="rounded p-2" style={{ border: `1px solid ${borderColor}`, backgroundColor: '#FAFAFA' }}>
+            <p className="ds-caption" style={{ color: mutedColor }}>{item.stageLabel}</p>
+            <p className="ds-small" style={{ color: textColor }}>{item.text}</p>
+          </article>
+        ))}
+        {items.length === 0 && (
+          <p className="ds-caption" style={{ color: mutedColor }}>No items in this column.</p>
+        )}
+      </div>
+    </div>
+  )
+}
 
 function NodeMap({ stages, onSelect }: { stages: StageState[]; onSelect: (id: string) => void }) {
   const containerRef = useRef<HTMLDivElement>(null)

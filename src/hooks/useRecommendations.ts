@@ -119,8 +119,7 @@ function recommendTopicsForOrientation(fieldIds: string[]): RecommendedTopic[] {
       const score =
         (fieldMatch ? 0.5 : 0) +
         (topic.employment === 'yes' ? 0.3 : 0) +
-        (topic.employment === 'open' ? 0.2 : 0) +
-        Math.random() * 0.1 // Tie-breaker
+        (topic.employment === 'open' ? 0.2 : 0)
 
       const similarProjects = (projects as Project[]).filter(
         (p) => p.topicId === topic.id
@@ -142,13 +141,34 @@ function recommendTopicsForOrientation(fieldIds: string[]): RecommendedTopic[] {
     .slice(0, 5) // Top 5
 }
 
+function resolveTopic(topicInput: string | null): Topic | null {
+  if (!topicInput) return null
+
+  const byId = (topics as Topic[]).find((t) => t.id === topicInput)
+  if (byId) return byId
+
+  const query = topicInput.toLowerCase().trim()
+  if (!query) return null
+
+  return (
+    (topics as Topic[])
+      .map((t) => {
+        const title = t.title.toLowerCase()
+        const desc = t.description.toLowerCase()
+        const titleHit = title.includes(query) ? 2 : 0
+        const descHit = desc.includes(query) ? 1 : 0
+        return { topic: t, score: titleHit + descHit }
+      })
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score)[0]?.topic ?? null
+  )
+}
+
 /**
  * Recommend supervisors for a selected topic
  */
 function recommendSupervisorsForTopic(topicId: string | null): RecommendedSupervisor[] {
-  if (!topicId) return []
-
-  const topic = (topics as Topic[]).find((t) => t.id === topicId)
+  const topic = resolveTopic(topicId)
   if (!topic) return []
 
   return supervisors
@@ -178,9 +198,7 @@ function recommendSupervisorsForTopic(topicId: string | null): RecommendedSuperv
  * Recommend experts for a selected topic
  */
 function recommendExpertsForTopic(topicId: string | null): RecommendedExpert[] {
-  if (!topicId) return []
-
-  const topic = (topics as Topic[]).find((t) => t.id === topicId)
+  const topic = resolveTopic(topicId)
   if (!topic) return []
 
   return experts
@@ -217,10 +235,11 @@ function recommendSimilarProjects(
   topicId: string | null,
   projectState: string
 ): RecommendedProject[] {
-  if (!topicId) return []
+  const topic = resolveTopic(topicId)
+  if (!topic) return []
 
   return (projects as Project[])
-    .filter((p) => p.topicId === topicId && p.state === projectState)
+    .filter((p) => p.topicId === topic.id && p.state === projectState)
     .map((project) => {
       return {
         project,
