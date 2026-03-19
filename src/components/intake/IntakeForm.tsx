@@ -101,9 +101,15 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
   }, [step])
 
   useEffect(() => {
-    if (bodyRef.current) {
-      bodyRef.current.scrollTop = bodyRef.current.scrollHeight
+    const scroll = () => {
+      if (bodyRef.current) {
+        bodyRef.current.scrollTop = bodyRef.current.scrollHeight
+      }
     }
+    scroll()
+    // Second scroll after animations/options have rendered
+    const t = setTimeout(scroll, 350)
+    return () => clearTimeout(t)
   }, [history, step])
 
   function advanceStep(userAnswer: string, formUpdate: Partial<FormData>) {
@@ -170,7 +176,7 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center px-4 py-16"
+      className="h-screen flex flex-col items-center justify-center px-4 py-8 overflow-hidden"
       style={{ background: T.pageBg, fontFamily: "'Courier New', Courier, monospace" }}
     >
       {/* Title */}
@@ -178,7 +184,7 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
-        className="text-center mb-10"
+        className="text-center mb-6"
       >
         <h1
           className="font-bold uppercase mb-2"
@@ -202,8 +208,13 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
         initial={{ opacity: 0, y: 30, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5, delay: 0.2, ease: 'easeOut' }}
-        className="w-full max-w-2xl overflow-hidden"
-        style={{ border: `1px solid ${T.border}`, borderRadius: '2px', background: T.terminalBg }}
+        className="w-full max-w-2xl flex flex-col overflow-hidden"
+        style={{
+          border: `1px solid ${T.border}`,
+          borderRadius: '2px',
+          background: T.terminalBg,
+          height: '60vh',
+        }}
       >
         {/* Header bar */}
         <div
@@ -226,8 +237,7 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
         {/* Terminal body */}
         <div
           ref={bodyRef}
-          className="p-6 space-y-5 overflow-y-auto scrollbar-hide"
-          style={{ minHeight: '420px', maxHeight: '520px' }}
+          className="p-6 space-y-5 overflow-y-auto scrollbar-hide flex-1"
         >
           {/* Boot message */}
           <motion.div
