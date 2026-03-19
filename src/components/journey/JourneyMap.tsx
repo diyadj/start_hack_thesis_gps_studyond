@@ -267,7 +267,6 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
           {/* Bottom */}
           <div className="px-5 py-4" style={{ borderTop: `1px solid ${S.border}` }}>
             <button
-              onClick={resetJourney}
               className="w-full text-xs py-1.5 px-3 text-left flex items-center gap-2 transition-colors"
               style={{ color: S.muted, background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '0.1em' }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = S.cyan }}
