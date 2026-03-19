@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import ReactMarkdown from 'react-markdown'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Loader2 } from 'lucide-react'
 import { STUCK, STAGES } from '@/lib/copy'
-import { SYSTEM_PROMPT_BASE, STUCK_PROMPT } from '@/lib/prompts'
+import { STUCK_PROMPT } from '@/lib/prompts'
 import { useJourneyStore } from '@/store/journeyStore'
+import { askStudyond } from '@/lib/studyond'
 
 interface StuckDialogProps {
   stageId: string | null
@@ -25,33 +27,13 @@ export function StuckDialog({ stageId, onClose }: StuckDialogProps) {
     setError(null)
 
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': import.meta.env.VITE_ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 300,
-          system: SYSTEM_PROMPT_BASE,
-          messages: [
-            {
-              role: 'user',
-              content: STUCK_PROMPT({
-                stage: stageMeta?.label ?? stageId ?? '',
-                topic: intake.topic,
-                blocker,
-              }),
-            },
-          ],
-        }),
-      })
-
-      const data = await res.json()
-      const text = data.content?.find((b: { type: string }) => b.type === 'text')?.text ?? ''
+      const text = await askStudyond(
+        STUCK_PROMPT({
+          stage: stageMeta?.label ?? stageId ?? '',
+          topic: intake.topic,
+          blocker,
+        })
+      )
       setResponse(text)
     } catch {
       setError('Something went wrong. Check your API key in .env.')
@@ -81,7 +63,7 @@ export function StuckDialog({ stageId, onClose }: StuckDialogProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-x-4 top-1/4 z-50 mx-auto max-w-lg bg-background border border-border rounded-2xl shadow-lg p-6"
+            className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-50 mx-auto max-w-lg bg-background border border-border rounded-2xl shadow-lg p-6 flex flex-col max-h-[85vh]"
           >
             {/* Header */}
             <div className="flex items-start justify-between mb-4">
@@ -135,9 +117,11 @@ export function StuckDialog({ stageId, onClose }: StuckDialogProps) {
                 animate={{ opacity: 1 }}
               >
                 {/* AI response */}
-                <div className="border border-ai rounded-xl p-4 mb-4">
+                <div className="border border-ai rounded-xl p-4 mb-4 overflow-y-auto max-h-[50vh]">
                   <p className="ds-caption text-ai mb-2 font-medium">AI diagnosis</p>
-                  <p className="ds-body whitespace-pre-wrap">{response}</p>
+                  <div className="ds-body prose prose-sm max-w-none">
+                    <ReactMarkdown>{response}</ReactMarkdown>
+                  </div>
                 </div>
 
                 <div className="flex gap-2">
