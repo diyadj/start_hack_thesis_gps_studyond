@@ -2,6 +2,7 @@ import { OrientationWorkspace } from './stages/OrientationWorkspace'
 import { SupervisorWorkspace } from './stages/SupervisorWorkspace'
 import { ApplicationWorkspace } from './stages/ApplicationWorkspace'
 import { PlannerWorkspace } from './stages/PlannerWorkspace'
+import { WritingWorkspace } from './stages/WritingWorkspace'
 
 type StageId = 'orientation' | 'supervisor' | 'application' | 'planning' | 'execution' | 'writing' | 'submission' | 'apply_jobs'
 
@@ -90,18 +91,7 @@ export function StageWorkspace({
         />
       )}
 
-      {activeStageId === 'application' && (
-        <ApplicationWorkspace
-          topic={topic}
-          applicationRecommendations={applicationRecommendations}
-          borderColor={borderColor}
-          textColor={textColor}
-          mutedColor={mutedColor}
-          accentBlue={accentBlue}
-        />
-      )}
-
-      {!['orientation', 'supervisor', 'application'].includes(activeStageId) && (
+      {!['orientation', 'supervisor'].includes(activeStageId) && (
         <PlannerWorkspace
           plannerItems={plannerItems}
           borderColor={borderColor}
