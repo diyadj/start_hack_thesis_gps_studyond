@@ -1,163 +1,205 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { INTAKE, STAGES } from '@/lib/copy'
-import { fields } from '@/data'
+import { useState, useRef, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { STAGES } from '@/lib/copy'
 import type { IntakeData } from '@/store/journeyStore'
 
 interface IntakeFormProps {
   onSubmit: (data: IntakeData) => void
 }
 
+type FormData = {
+  degree: IntakeData['degree']
+  topic: string
+  university: string
+  currentStage: string
+  fieldIds: string[]
+  deadline: string
+}
+
+const STEPS = [
+  {
+    id: 'currentStage' as const,
+    label: 'Where are you in your journey?',
+    type: 'select' as const,
+    options: STAGES.map((s) => ({ value: s.id, label: s.label })),
+  },
+  {
+    id: 'deadline' as const,
+    label: 'When is your deadline?',
+    type: 'date' as const,
+    options: undefined,
+  },
+]
+
+// Framer Motion variants
+const msgVariants = {
+  hidden: { opacity: 0, y: 14 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
+  exit: { opacity: 0, y: -8, transition: { duration: 0.2 } },
+}
+
+const optionContainerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.06, delayChildren: 0.1 } },
+}
+
+const optionVariants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.25, ease: 'easeOut' } },
+}
+
 export function IntakeForm({ onSubmit }: IntakeFormProps) {
-  const [form, setForm] = useState({
+  const [step, setStep] = useState(0)
+  const [inputValue, setInputValue] = useState('')
+  const [form, setForm] = useState<FormData>({
+    degree: 'msc',
     topic: '',
     university: '',
     currentStage: 'orientation',
+    fieldIds: [],
     deadline: '',
-    degree: 'msc' as IntakeData['degree'],
-    fieldIds: [] as string[],
   })
 
-  function toggleField(id: string) {
-    setForm((prev) => ({
-      ...prev,
-      fieldIds: prev.fieldIds.includes(id)
-        ? prev.fieldIds.filter((f) => f !== id)
-        : [...prev.fieldIds, id],
-    }))
+  const inputRef = useRef<HTMLInputElement>(null)
+  const totalSteps = STEPS.length
+  const currentStep = STEPS[step]
+  const progress = ((step + 1) / totalSteps) * 100
+
+  useEffect(() => {
+    setTimeout(() => inputRef.current?.focus(), 50)
+  }, [step])
+
+  function advanceStep(formUpdate: Partial<FormData>) {
+    const newForm = { ...form, ...formUpdate }
+    setForm(newForm)
+    setInputValue('')
+
+    if (step + 1 >= totalSteps) {
+      onSubmit(newForm as IntakeData)
+    } else {
+      setStep((s) => s + 1)
+    }
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!form.deadline) return
-    onSubmit(form)
+  function handleSelectOption(value: string) {
+    advanceStep({ [currentStep.id]: value })
   }
 
-  const isValid = form.deadline.length > 0
+  function handleDateSubmit() {
+    if (!inputValue.trim()) return
+    advanceStep({ [currentStep.id]: inputValue.trim() })
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter') {
+      if (currentStep.type === 'date') handleDateSubmit()
+    }
+  }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="min-h-screen flex items-start justify-center px-4 py-16"
-    >
-      <div className="w-full max-w-xl">
-        {/* Header */}
-        <div className="mb-10">
-          <p className="ds-label text-muted-foreground mb-2">Studyond — Thesis GPS</p>
-          <h1 className="ds-title-lg mb-3">{INTAKE.title}</h1>
-          <p className="ds-body text-muted-foreground">{INTAKE.subtitle}</p>
+    <div className="min-h-screen bg-white text-gray-900 flex flex-col items-center justify-center px-4 py-8">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+        className="mb-12 text-center"
+      >
+        <h1 className="text-5xl font-bold mb-2 text-gray-900">Let's Get Started</h1>
+        <p className="text-lg text-gray-600">Just two quick questions to set up your thesis journey</p>
+      </motion.div>
+
+      {/* Progress bar */}
+      <div className="w-full max-w-2xl mb-8">
+        <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            className="h-full bg-blue-600"
+          />
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Topic */}
-          <div>
-            <label className="ds-label block mb-1.5">{INTAKE.topicLabel}</label>
-            <input
-              type="text"
-              value={form.topic}
-              onChange={(e) => setForm((p) => ({ ...p, topic: e.target.value }))}
-              placeholder={INTAKE.topicPlaceholder}
-              className="w-full border border-border rounded-xl px-4 py-3 ds-body bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-            <p className="ds-caption text-muted-foreground mt-1.5">{INTAKE.topicHint}</p>
-          </div>
-
-          {/* University + Degree */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="ds-label block mb-1.5">{INTAKE.universityLabel}</label>
-              <input
-                type="text"
-                value={form.university}
-                onChange={(e) => setForm((p) => ({ ...p, university: e.target.value }))}
-                placeholder={INTAKE.universityPlaceholder}
-                className="w-full border border-border rounded-xl px-4 py-3 ds-body bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-            <div>
-              <label className="ds-label block mb-1.5">Degree level</label>
-              <select
-                value={form.degree}
-                onChange={(e) => setForm((p) => ({ ...p, degree: e.target.value as IntakeData['degree'] }))}
-                className="w-full border border-border rounded-xl px-4 py-3 ds-body bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value="bsc">Bachelor (BSc)</option>
-                <option value="msc">Master (MSc)</option>
-                <option value="phd">PhD</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Current Stage */}
-          <div>
-            <label className="ds-label block mb-2">{INTAKE.stageLabel}</label>
-            <div className="grid grid-cols-1 gap-2">
-              {STAGES.map((stage) => (
-                <button
-                  key={stage.id}
-                  type="button"
-                  onClick={() => setForm((p) => ({ ...p, currentStage: stage.id }))}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all duration-200 ${
-                    form.currentStage === stage.id
-                      ? 'border-foreground bg-secondary'
-                      : 'border-border hover:border-muted-foreground'
-                  }`}
-                >
-                  <span className="text-lg">{stage.icon}</span>
-                  <div>
-                    <p className="ds-label">{stage.shortLabel}</p>
-                    <p className="ds-caption text-muted-foreground">{stage.description}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Fields */}
-          <div>
-            <label className="ds-label block mb-2">Your fields of study</label>
-            <div className="flex flex-wrap gap-2">
-              {fields.map((f) => (
-                <button
-                  key={f.id}
-                  type="button"
-                  onClick={() => toggleField(f.id)}
-                  className={`px-3 py-1.5 rounded-full border ds-small transition-all duration-150 ${
-                    form.fieldIds.includes(f.id)
-                      ? 'border-foreground bg-foreground text-primary-foreground'
-                      : 'border-border hover:border-muted-foreground'
-                  }`}
-                >
-                  {f.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Deadline */}
-          <div>
-            <label className="ds-label block mb-1.5">{INTAKE.deadlineLabel}</label>
-            <input
-              type="date"
-              required
-              value={form.deadline}
-              onChange={(e) => setForm((p) => ({ ...p, deadline: e.target.value }))}
-              className="w-full border border-border rounded-xl px-4 py-3 ds-body bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={!isValid}
-            className="w-full bg-foreground text-primary-foreground rounded-full py-4 ds-label font-medium transition-opacity duration-150 disabled:opacity-40 hover:opacity-85"
-          >
-            {INTAKE.submitButton}
-          </button>
-        </form>
+        <div className="text-sm text-gray-600 mt-2">
+          Step {step + 1} of {totalSteps}
+        </div>
       </div>
-    </motion.div>
+
+      {/* Form Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 30, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, delay: 0.2, ease: 'easeOut' }}
+        className="w-full max-w-2xl bg-white border border-gray-200 rounded-xl p-8 shadow-sm"
+      >
+        {/* Question */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={step}
+            variants={msgVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="space-y-6"
+          >
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+                {currentStep.label}
+              </h2>
+
+              {/* Select options */}
+              {currentStep.type === 'select' && (
+                <motion.div
+                  className="space-y-3"
+                  variants={optionContainerVariants}
+                  initial="hidden"
+                  animate="visible"
+                >
+                  {currentStep.options?.map((opt) => (
+                    <motion.button
+                      key={opt.value}
+                      variants={optionVariants}
+                      onClick={() => handleSelectOption(opt.value)}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="w-full text-left px-5 py-4 border border-gray-300 rounded-lg font-medium text-gray-900 hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                    >
+                      {opt.label}
+                    </motion.button>
+                  ))}
+                </motion.div>
+              )}
+
+              {/* Date input */}
+              {currentStep.type === 'date' && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2, duration: 0.3 }}
+                  className="space-y-4"
+                >
+                  <input
+                    ref={inputRef}
+                    type="date"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className="w-full px-5 py-4 border border-gray-300 rounded-lg font-medium text-gray-900 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200 transition-all"
+                  />
+                  <motion.button
+                    onClick={handleDateSubmit}
+                    disabled={!inputValue.trim()}
+                    whileHover={inputValue.trim() ? { scale: 1.02 } : {}}
+                    whileTap={inputValue.trim() ? { scale: 0.98 } : {}}
+                    className="w-full px-5 py-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Continue
+                  </motion.button>
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </motion.div>
+    </div>
   )
 }
