@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Compass, User, Calendar, Zap, PenLine, Check } from 'lucide-react'
+import { Compass, User, Calendar, Zap, PenLine, Check, FileCheck2, Briefcase } from 'lucide-react'
 import { STAGES, URGENCY_MESSAGES } from '@/lib/copy'
 import { weeksUntil, getUrgency } from '@/lib/utils'
 import { useJourneyStore, type StageState } from '@/store/journeyStore'
@@ -9,7 +9,7 @@ import { useMatches } from '@/hooks/useMatches'
 import { getFieldName, getUniversityName } from '@/data'
 import mapImage from '@/assets/map.png'
 
-type StageId = 'orientation' | 'supervisor' | 'planning' | 'execution' | 'writing'
+type StageId = 'orientation' | 'supervisor' | 'planning' | 'execution' | 'writing' | 'submission' | 'apply_jobs'
 
 const STAGE_ICONS: Record<StageId, React.ElementType> = {
   orientation: Compass,
@@ -17,6 +17,8 @@ const STAGE_ICONS: Record<StageId, React.ElementType> = {
   planning:    Calendar,
   execution:   Zap,
   writing:     PenLine,
+  submission:  FileCheck2,
+  apply_jobs:  Briefcase,
 }
 
 interface JourneyMapProps {
@@ -29,15 +31,19 @@ const STAGE_TASKS: Record<string, string[]> = {
   planning:    ['Draft methodology outline', 'Create project timeline', 'Confirm company partner alignment'],
   execution:   ['Conduct expert interviews', 'Collect & clean dataset', 'Iterate on findings with advisor'],
   writing:     ['Draft introduction & conclusion', 'Peer review round', 'Final formatting & citation check'],
+  submission:  ['Run final plagiarism and formatting checks', 'Prepare defense summary deck', 'Submit thesis package before deadline'],
+  apply_jobs:  ['Extract 3 resume bullets from thesis outcomes', 'Prepare portfolio summary of your thesis impact', 'Apply to 5 role-aligned openings with tailored outreach'],
 }
 
 // Node positions in the SVG coordinate space (viewBox 0 0 240 150)
 const NODE_POSITIONS = [
-  { id: 'orientation', x: 40,  y: 115, label: 'NODE_ORIENT', stageName: 'ORIENTATION' },
-  { id: 'supervisor',  x: 90,  y: 72,  label: 'NODE_SUPV',   stageName: 'SUPERVISOR'  },
-  { id: 'planning',    x: 130, y: 95,  label: 'NODE_PLAN',   stageName: 'PLANNING'    },
-  { id: 'execution',   x: 178, y: 52,  label: 'NODE_EXEC',   stageName: 'EXECUTION'   },
-  { id: 'writing',     x: 215, y: 85,  label: 'NODE_WRITE',  stageName: 'WRITING'     },
+  { id: 'orientation', x: 24,  y: 112, label: 'NODE_ORIENT', stageName: 'ORIENTATION' },
+  { id: 'supervisor',  x: 56,  y: 72,  label: 'NODE_SUPV',   stageName: 'SUPERVISOR'  },
+  { id: 'planning',    x: 92,  y: 96,  label: 'NODE_PLAN',   stageName: 'PLANNING'    },
+  { id: 'execution',   x: 128, y: 58,  label: 'NODE_EXEC',   stageName: 'EXECUTION'   },
+  { id: 'writing',     x: 162, y: 88,  label: 'NODE_WRITE',  stageName: 'WRITING'     },
+  { id: 'submission',  x: 196, y: 60,  label: 'NODE_SUBMIT', stageName: 'SUBMISSION'  },
+  { id: 'apply_jobs',  x: 226, y: 86,  label: 'NODE_JOBS',   stageName: 'JOBS'        },
 ]
 
 
@@ -653,9 +659,27 @@ function NodeMap({ stages, onSelect }: { stages: StageState[]; onSelect: (id: st
             height: '100%',
             objectFit: 'cover',
             display: 'block',
-            opacity: 0.12,
+            opacity: 0.24,
             position: 'absolute',
             inset: 0,
+          }}
+        />
+
+        {/* Second pass to make the map texture more visible without reducing readability */}
+        <img
+          src={mapImage}
+          alt="topographic map texture"
+          draggable={false}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            display: 'block',
+            opacity: 0.1,
+            position: 'absolute',
+            inset: 0,
+            mixBlendMode: 'multiply',
+            transform: 'scale(1.02)',
           }}
         />
 
