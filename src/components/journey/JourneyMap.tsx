@@ -5,6 +5,7 @@ import { STAGES, URGENCY_MESSAGES } from '@/lib/copy'
 import { weeksUntil, getUrgency } from '@/lib/utils'
 import { useJourneyStore, type StageState } from '@/store/journeyStore'
 import { ActionCard } from '@/components/journey/ActionCard'
+import { StageWorkspace } from '@/components/journey/StageWorkspace'
 import { useMatches } from '@/hooks/useMatches'
 import { useRecommendations } from '@/hooks/useRecommendations'
 import { getFieldName, getUniversityName } from '@/data'
@@ -203,26 +204,37 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
         <div className="flex-1 overflow-y-auto border-r" style={{ borderColor }}>
           <div className="relative" style={{ height: 'min(68vh, 620px)', minHeight: 420 }}>
             <NodeMap stages={stages} onSelect={setSelectedStageId} />
+          </div>
 
-          {/* Stage detail overlay — positioned at top-right with z-index */}
-            <div className="absolute inset-0 flex items-start justify-end p-3 sm:p-6 pointer-events-none" style={{ zIndex: 10 }}>
-            <AnimatePresence mode="wait">
-              {selectedMeta && selectedStage && (
-                <motion.div
-                  key={selectedStage.id}
-                  variants={cardVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  className="pointer-events-auto scrollbar-hide rounded-lg shadow-lg mr-0 lg:mr-[280px]"
-                  style={{
-                    width: 'min(360px, calc(100vw - 24px))',
-                    maxHeight: 'calc(100vh - 120px)',
-                    overflowY: 'auto',
-                    backgroundColor: bgColor,
-                    border: `1px solid ${borderColor}`,
-                  }}
-                >
+          <StageWorkspace
+            activeStageId={((selectedStageId ?? activeStageId) as StageId)}
+            hasPassedSupervisor={hasPassedSupervisor}
+            orientationRecommendations={orientationRecommendations.topics}
+            supervisorRecommendations={supervisorRecommendations}
+            plannerItems={plannerItems}
+            borderColor={borderColor}
+            textColor={textColor}
+            mutedColor={mutedColor}
+            accentBlue={accentBlue}
+          />
+        </div>
+
+        {/* Stage detail panel — right of map */}
+        <AnimatePresence mode="wait">
+          {selectedMeta && selectedStage && (
+            <motion.div
+              key={selectedStage.id}
+              variants={cardVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="flex-shrink-0 scrollbar-hide overflow-y-auto"
+              style={{
+                width: 360,
+                borderLeft: `1px solid ${borderColor}`,
+                backgroundColor: bgColor,
+              }}
+            >
                   {/* Card header */}
                   <div
                     className="flex items-center justify-between px-5 py-4 border-b"
@@ -568,21 +580,6 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
-          </div>
-
-          <StageWorkspace
-            activeStageId={activeStageId}
-            hasPassedSupervisor={hasPassedSupervisor}
-            orientationRecommendations={orientationRecommendations.topics}
-            supervisorRecommendations={supervisorRecommendations}
-            plannerItems={plannerItems}
-            borderColor={borderColor}
-            textColor={textColor}
-            mutedColor={mutedColor}
-            accentBlue={accentBlue}
-          />
-        </div>
 
         {/* ── Right Sidebar: Navigator, Current Phase, Milestones ── */}
         <div
@@ -749,224 +746,6 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
 }
 
 // ── Topographic node map ───────────────────────────────────────────
-
-function StageWorkspace({
-  activeStageId,
-  hasPassedSupervisor,
-  orientationRecommendations,
-  supervisorRecommendations,
-  plannerItems,
-  borderColor,
-  textColor,
-  mutedColor,
-  accentBlue,
-}: {
-  activeStageId: StageId
-  hasPassedSupervisor: boolean
-  orientationRecommendations: Array<{
-    topic: { id: string; title: string; description: string; employment?: 'yes' | 'no' | 'open' }
-    relevance: string
-    employmentSignal?: 'yes' | 'no' | 'open'
-  }>
-  supervisorRecommendations: {
-    experts: Array<{
-      score: number
-      relevance: string
-      expert: { id: string; firstName: string; lastName: string; companyName?: string; title: string }
-    }>
-    supervisors: Array<{
-      score: number
-      relevance: string
-      supervisor: { id: string; firstName: string; lastName: string; title: string }
-    }>
-  }
-  plannerItems: Array<{
-    id: string
-    stageId: string
-    stageLabel: string
-    text: string
-    status: 'todo' | 'in_progress' | 'done'
-  }>
-  borderColor: string
-  textColor: string
-  mutedColor: string
-  accentBlue: string
-}) {
-  const topCompanies = Array.from(
-    new Map(
-      supervisorRecommendations.experts
-        .filter((r) => r.expert.companyName)
-        .map((r) => [r.expert.companyName as string, r])
-    ).values()
-  ).slice(0, 4)
-
-  const bestCompany = topCompanies[0]
-  const runnerUp = topCompanies[1]
-
-  const todoItems = plannerItems.filter((t) => t.status === 'todo')
-  const inProgressItems = plannerItems.filter((t) => t.status === 'in_progress')
-  const doneItems = plannerItems.filter((t) => t.status === 'done')
-
-  return (
-    <section className="px-4 sm:px-6 pb-8 pt-5" style={{ borderTop: `1px solid ${borderColor}` }}>
-      <div className="mb-4">
-        <h3 className="ds-title-sm font-semibold" style={{ color: textColor }}>
-          Stage Workspace
-        </h3>
-        <p className="ds-small" style={{ color: mutedColor }}>
-          Scroll for recommendations and project management tools for your current phase.
-        </p>
-      </div>
-
-      {activeStageId === 'orientation' && (
-        <div className="space-y-3">
-          <p className="ds-label font-semibold" style={{ color: textColor }}>Recommended Topics</p>
-          <div className="grid gap-3 md:grid-cols-2">
-            {orientationRecommendations.slice(0, 6).map((rec) => (
-              <article
-                key={rec.topic.id}
-                className="rounded-lg p-3"
-                style={{ border: `1px solid ${borderColor}`, backgroundColor: '#FFFFFF' }}
-              >
-                <p className="ds-small font-semibold" style={{ color: textColor }}>{rec.topic.title}</p>
-                <p className="ds-caption mt-1" style={{ color: mutedColor }}>
-                  {rec.topic.description.slice(0, 140)}...
-                </p>
-                <p className="ds-caption mt-2" style={{ color: mutedColor }}>{rec.relevance}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {activeStageId === 'supervisor' && (
-        <div className="space-y-4">
-          <p className="ds-label font-semibold" style={{ color: textColor }}>Top Sponsor / Company Matches</p>
-
-          <div className="grid gap-3 md:grid-cols-2">
-            {topCompanies.length === 0 && (
-              <div className="rounded-lg p-3" style={{ border: `1px solid ${borderColor}`, backgroundColor: '#FFFFFF' }}>
-                <p className="ds-small" style={{ color: mutedColor }}>
-                  Add or refine your topic to unlock stronger company matching.
-                </p>
-              </div>
-            )}
-
-            {topCompanies.map((rec) => (
-              <article
-                key={rec.expert.id}
-                className="rounded-lg p-3"
-                style={{ border: `1px solid ${borderColor}`, backgroundColor: '#FFFFFF' }}
-              >
-                <p className="ds-small font-semibold" style={{ color: textColor }}>
-                  {rec.expert.companyName}
-                </p>
-                <p className="ds-caption mt-1" style={{ color: mutedColor }}>
-                  Contact: {rec.expert.firstName} {rec.expert.lastName} ({rec.expert.title})
-                </p>
-                <p className="ds-caption mt-1" style={{ color: mutedColor }}>
-                  Match score: {Math.round(rec.score * 100)}%
-                </p>
-                <p className="ds-caption mt-1" style={{ color: mutedColor }}>{rec.relevance}</p>
-              </article>
-            ))}
-          </div>
-
-          <div className="rounded-lg p-4" style={{ border: `1px solid ${borderColor}`, backgroundColor: '#F8FAFF' }}>
-            <p className="ds-label font-semibold" style={{ color: accentBlue }}>AI Quick Comparison</p>
-            <p className="ds-small mt-2" style={{ color: textColor }}>
-              {bestCompany
-                ? `Best fit right now is ${bestCompany.expert.companyName}. It has the strongest match score (${Math.round(bestCompany.score * 100)}%) and relevant contact availability through ${bestCompany.expert.firstName} ${bestCompany.expert.lastName}.`
-                : 'No clear company lead yet. Sharpen your topic title to get a better recommendation.'}
-            </p>
-            {runnerUp && (
-              <p className="ds-small mt-2" style={{ color: mutedColor }}>
-                Runner-up: {runnerUp.expert.companyName} (${Math.round(runnerUp.score * 100)}%).
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {hasPassedSupervisor && (
-        <div className="space-y-4 mt-6">
-          <p className="ds-label font-semibold" style={{ color: textColor }}>
-            Project Manager Board
-          </p>
-
-          <div className="grid gap-3 lg:grid-cols-3">
-            <KanbanColumn
-              title="To Do"
-              items={todoItems}
-              borderColor={borderColor}
-              textColor={textColor}
-              mutedColor={mutedColor}
-            />
-            <KanbanColumn
-              title="In Progress"
-              items={inProgressItems}
-              borderColor={borderColor}
-              textColor={textColor}
-              mutedColor={mutedColor}
-            />
-            <KanbanColumn
-              title="Done"
-              items={doneItems}
-              borderColor={borderColor}
-              textColor={textColor}
-              mutedColor={mutedColor}
-            />
-          </div>
-
-          <div className="rounded-lg p-4" style={{ border: `1px solid ${borderColor}`, backgroundColor: '#FFFFFF' }}>
-            <p className="ds-label font-semibold" style={{ color: textColor }}>Things you still need to do</p>
-            <ul className="mt-2 space-y-1">
-              {todoItems.slice(0, 8).map((item) => (
-                <li key={item.id} className="ds-small" style={{ color: mutedColor }}>
-                  • [{item.stageLabel}] {item.text}
-                </li>
-              ))}
-              {todoItems.length === 0 && (
-                <li className="ds-small" style={{ color: mutedColor }}>All tracked tasks are complete for now.</li>
-              )}
-            </ul>
-          </div>
-        </div>
-      )}
-    </section>
-  )
-}
-
-function KanbanColumn({
-  title,
-  items,
-  borderColor,
-  textColor,
-  mutedColor,
-}: {
-  title: string
-  items: Array<{ id: string; stageLabel: string; text: string }>
-  borderColor: string
-  textColor: string
-  mutedColor: string
-}) {
-  return (
-    <div className="rounded-lg p-3" style={{ border: `1px solid ${borderColor}`, backgroundColor: '#FFFFFF' }}>
-      <p className="ds-small font-semibold" style={{ color: textColor }}>{title}</p>
-      <div className="mt-2 space-y-2">
-        {items.slice(0, 6).map((item) => (
-          <article key={item.id} className="rounded p-2" style={{ border: `1px solid ${borderColor}`, backgroundColor: '#FAFAFA' }}>
-            <p className="ds-caption" style={{ color: mutedColor }}>{item.stageLabel}</p>
-            <p className="ds-small" style={{ color: textColor }}>{item.text}</p>
-          </article>
-        ))}
-        {items.length === 0 && (
-          <p className="ds-caption" style={{ color: mutedColor }}>No items in this column.</p>
-        )}
-      </div>
-    </div>
-  )
-}
 
 function NodeMap({ stages, onSelect }: { stages: StageState[]; onSelect: (id: string) => void }) {
   const containerRef = useRef<HTMLDivElement>(null)
