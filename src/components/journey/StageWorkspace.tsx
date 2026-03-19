@@ -14,12 +14,7 @@ type PlannerItem = {
 
 interface StageWorkspaceProps {
   activeStageId: StageId
-  hasPassedSupervisor: boolean
-  orientationRecommendations: Array<{
-    topic: { id: string; title: string; description: string; employment?: 'yes' | 'no' | 'open' }
-    relevance: string
-    employmentSignal?: 'yes' | 'no' | 'open'
-  }>
+  topic: string
   supervisorRecommendations: {
     experts: Array<{
       score: number
@@ -41,8 +36,7 @@ interface StageWorkspaceProps {
 
 export function StageWorkspace({
   activeStageId,
-  hasPassedSupervisor,
-  orientationRecommendations,
+  topic,
   supervisorRecommendations,
   plannerItems,
   borderColor,
@@ -63,10 +57,11 @@ export function StageWorkspace({
 
       {activeStageId === 'orientation' && (
         <OrientationWorkspace
-          recommendations={orientationRecommendations}
+          topic={topic}
           borderColor={borderColor}
           textColor={textColor}
           mutedColor={mutedColor}
+          accentBlue={accentBlue}
         />
       )}
 
@@ -80,7 +75,7 @@ export function StageWorkspace({
         />
       )}
 
-      {hasPassedSupervisor && !['orientation', 'supervisor'].includes(activeStageId) && (
+      {!['orientation', 'supervisor'].includes(activeStageId) && (
         <PlannerWorkspace
           plannerItems={plannerItems}
           borderColor={borderColor}

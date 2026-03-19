@@ -100,10 +100,9 @@ export function JourneyMap({ onStuck, onReset }: JourneyMapProps) {
     intake.topic,
     intake.fieldIds
   )
-  const orientationRecommendations = useRecommendations('orientation', intake.topic, intake.fieldIds)
   const supervisorRecommendations = useRecommendations('supervisor', intake.topic, intake.fieldIds)
   const activeStageId = (activeStage?.id as StageId | undefined) ?? 'orientation'
-  const hasPassedSupervisor = stages.find((s) => s.id === 'supervisor')?.status === 'done'
+
 
   const plannerItems = useMemo<PlannerItem[]>(() => {
     const managedStages: StageId[] = ['planning', 'execution', 'writing', 'submission', 'apply_jobs']
@@ -213,8 +212,7 @@ export function JourneyMap({ onStuck, onReset }: JourneyMapProps) {
 
           <StageWorkspace
             activeStageId={((selectedStageId ?? activeStageId) as StageId)}
-            hasPassedSupervisor={hasPassedSupervisor}
-            orientationRecommendations={orientationRecommendations.topics}
+            topic={intake.topic}
             supervisorRecommendations={supervisorRecommendations}
             plannerItems={plannerItems}
             borderColor={borderColor}
@@ -868,7 +866,7 @@ function NodeMap({ stages, onSelect }: { stages: StageState[]; onSelect: (id: st
             height: '100%',
             objectFit: 'cover',
             display: 'block',
-            opacity: 0.62,
+            opacity: 0.22,
             position: 'absolute',
             inset: 0,
             mixBlendMode: 'multiply',
