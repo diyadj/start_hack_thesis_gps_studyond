@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { STAGES } from '@/lib/copy'
 import type { IntakeData } from '@/store/journeyStore'
-import { fields, universities } from '@/data'
 
 interface IntakeFormProps {
   onSubmit: (data: IntakeData) => void
@@ -34,33 +33,10 @@ const STEPS: StepDefinition[] = [
     options: STAGES.map((s) => ({ value: s.id, label: s.label })),
   },
   {
-    id: 'degree',
-    label: 'Which degree are you doing?',
-    type: 'select',
-    options: [
-      { value: 'bsc', label: 'Bachelor (BSc)' },
-      { value: 'msc', label: 'Master (MSc)' },
-      { value: 'phd', label: 'PhD' },
-    ],
-  },
-  {
-    id: 'university',
-    label: 'Which university are you at?',
-    type: 'select',
-    options: universities.map((u) => ({ value: u.name, label: u.name })),
-  },
-  {
     id: 'topic',
     label: 'What is your thesis direction right now?',
     type: 'text',
     placeholder: 'e.g. AI for sustainable supply chains, fintech regulation, or your study field',
-  },
-  {
-    id: 'fieldIds',
-    label: 'Select your main fields (up to 3)',
-    type: 'multiselect',
-    options: fields.map((f) => ({ value: f.id, label: f.name })),
-    helperText: 'This powers supervisor and expert matching.',
   },
   {
     id: 'deadline' as const,
@@ -93,7 +69,7 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
   const [form, setForm] = useState<FormData>({
     degree: 'msc',
     topic: '',
-    university: '',
+    university: 'University of St. Gallen (HSG)',
     currentStage: 'orientation',
     fieldIds: [],
     deadline: '',
@@ -134,23 +110,6 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
     advanceStep({ [currentStep.id]: inputValue.trim() })
   }
 
-  function handleToggleField(value: string) {
-    setForm((prev) => {
-      const exists = prev.fieldIds.includes(value)
-      if (exists) {
-        return { ...prev, fieldIds: prev.fieldIds.filter((id) => id !== value) }
-      }
-
-      if (prev.fieldIds.length >= 3) return prev
-      return { ...prev, fieldIds: [...prev.fieldIds, value] }
-    })
-  }
-
-  function handleFieldSubmit() {
-    if (form.fieldIds.length === 0) return
-    advanceStep({ fieldIds: form.fieldIds })
-  }
-
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter') {
       if (currentStep.type === 'date') handleDateSubmit()
@@ -168,7 +127,7 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
         className="mb-12 text-center"
       >
         <h1 className="text-5xl font-bold mb-2 text-gray-900">Let's Map Your Thesis</h1>
-        <p className="text-lg text-gray-600">A quick setup so your route is adapted to where you are</p>
+        <p className="text-lg text-gray-600">Just three quick questions to adapt your route</p>
       </motion.div>
 
       {/* Progress bar */}
@@ -288,51 +247,6 @@ export function IntakeForm({ onSubmit }: IntakeFormProps) {
                 </motion.div>
               )}
 
-              {/* Multi-select fields */}
-              {currentStep.type === 'multiselect' && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.2, duration: 0.3 }}
-                  className="space-y-4"
-                >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[260px] overflow-y-auto pr-1">
-                    {currentStep.options?.map((opt) => {
-                      const selected = form.fieldIds.includes(opt.value)
-                      const disabled = !selected && form.fieldIds.length >= 3
-
-                      return (
-                        <button
-                          key={opt.value}
-                          onClick={() => handleToggleField(opt.value)}
-                          disabled={disabled}
-                          className={`text-left px-4 py-3 border rounded-lg font-medium transition-colors text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed ${
-                            selected
-                              ? 'border-blue-400 bg-blue-50'
-                              : 'border-gray-300 bg-white hover:border-blue-300'
-                          }`}
-                        >
-                          {opt.label}
-                        </button>
-                      )
-                    })}
-                  </div>
-
-                  <p className="text-sm text-gray-600">
-                    {currentStep.helperText} {form.fieldIds.length}/3 selected.
-                  </p>
-
-                  <motion.button
-                    onClick={handleFieldSubmit}
-                    disabled={form.fieldIds.length === 0}
-                    whileHover={form.fieldIds.length > 0 ? { scale: 1.02 } : {}}
-                    whileTap={form.fieldIds.length > 0 ? { scale: 0.98 } : {}}
-                    className="w-full px-5 py-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Continue
-                  </motion.button>
-                </motion.div>
-              )}
             </div>
           </motion.div>
         </AnimatePresence>

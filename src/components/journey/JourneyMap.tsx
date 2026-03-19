@@ -1,15 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Compass, User, Calendar, Zap, PenLine, Check } from 'lucide-react'
+import { Compass, User, Calendar, Zap, PenLine, Check, FileCheck2, Briefcase } from 'lucide-react'
 import { STAGES, URGENCY_MESSAGES } from '@/lib/copy'
 import { weeksUntil, getUrgency } from '@/lib/utils'
 import { useJourneyStore, type StageState } from '@/store/journeyStore'
 import { ActionCard } from '@/components/journey/ActionCard'
 import { useMatches } from '@/hooks/useMatches'
+import { useRecommendations } from '@/hooks/useRecommendations'
 import { getFieldName, getUniversityName } from '@/data'
 import mapImage from '@/assets/map.png'
 
-type StageId = 'orientation' | 'supervisor' | 'planning' | 'execution' | 'writing'
+type StageId = 'orientation' | 'supervisor' | 'planning' | 'execution' | 'writing' | 'submission' | 'apply_jobs'
 
 const STAGE_ICONS: Record<StageId, React.ElementType> = {
   orientation: Compass,
@@ -17,6 +18,8 @@ const STAGE_ICONS: Record<StageId, React.ElementType> = {
   planning:    Calendar,
   execution:   Zap,
   writing:     PenLine,
+  submission:  FileCheck2,
+  apply_jobs:  Briefcase,
 }
 
 interface JourneyMapProps {
@@ -29,15 +32,19 @@ const STAGE_TASKS: Record<string, string[]> = {
   planning:    ['Draft methodology outline', 'Create project timeline', 'Confirm company partner alignment'],
   execution:   ['Conduct expert interviews', 'Collect & clean dataset', 'Iterate on findings with advisor'],
   writing:     ['Draft introduction & conclusion', 'Peer review round', 'Final formatting & citation check'],
+  submission:  ['Run final plagiarism and formatting checks', 'Prepare defense summary deck', 'Submit thesis package before deadline'],
+  apply_jobs:  ['Extract 3 resume bullets from thesis outcomes', 'Prepare portfolio summary of your thesis impact', 'Apply to 5 role-aligned openings with tailored outreach'],
 }
 
 // Node positions in the SVG coordinate space (viewBox 0 0 240 150)
 const NODE_POSITIONS = [
-  { id: 'orientation', x: 40,  y: 115, label: 'NODE_ORIENT', stageName: 'ORIENTATION' },
-  { id: 'supervisor',  x: 90,  y: 72,  label: 'NODE_SUPV',   stageName: 'SUPERVISOR'  },
-  { id: 'planning',    x: 130, y: 95,  label: 'NODE_PLAN',   stageName: 'PLANNING'    },
-  { id: 'execution',   x: 178, y: 52,  label: 'NODE_EXEC',   stageName: 'EXECUTION'   },
-  { id: 'writing',     x: 215, y: 85,  label: 'NODE_WRITE',  stageName: 'WRITING'     },
+  { id: 'orientation', x: 24,  y: 112, label: 'NODE_ORIENT', stageName: 'ORIENTATION' },
+  { id: 'supervisor',  x: 56,  y: 72,  label: 'NODE_SUPV',   stageName: 'SUPERVISOR'  },
+  { id: 'planning',    x: 92,  y: 96,  label: 'NODE_PLAN',   stageName: 'PLANNING'    },
+  { id: 'execution',   x: 128, y: 58,  label: 'NODE_EXEC',   stageName: 'EXECUTION'   },
+  { id: 'writing',     x: 162, y: 88,  label: 'NODE_WRITE',  stageName: 'WRITING'     },
+  { id: 'submission',  x: 196, y: 60,  label: 'NODE_SUBMIT', stageName: 'SUBMISSION'  },
+  { id: 'apply_jobs',  x: 226, y: 86,  label: 'NODE_JOBS',   stageName: 'JOBS'        },
 ]
 
 
@@ -77,6 +84,11 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
     ? stages.filter((s) => s.status !== 'not_started')
     : stages
   const { topSupervisors, topExperts } = useMatches(intake.fieldIds, 2)
+  const recommendations = useRecommendations(
+    selectedStage?.id as StageId || 'orientation',
+    intake.topic,
+    intake.fieldIds
+  )
 
   function toggleTask(key: string) {
     setCheckedTasks((p) => ({ ...p, [key]: !p[key] }))
@@ -294,6 +306,138 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
                         weeksLeft={weeksLeft}
                         urgency={urgency}
                       />
+                    )}
+
+                    {/* Recommended Topics (Orientation & Apply Jobs stages) */}
+                    {recommendations.topics.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="ds-label font-semibold" style={{ color: textColor }}>
+                          {selectedStage?.id === 'apply_jobs' ? 'Job Opportunities' : 'Suggested Topics'}
+                        </p>
+                        <div className="space-y-2">
+                          {recommendations.topics.slice(0, 3).map((rec) => (
+                            <div
+                              key={rec.topic.id}
+                              className="rounded px-3 py-2 cursor-pointer transition-colors hover:bg-blue-50"
+                              style={{
+                                backgroundColor: '#F5F5F5',
+                                border: `1px solid ${borderColor}`,
+                              }}
+                            >
+                              <p className="ds-small font-medium" style={{ color: textColor }}>
+                                {rec.topic.title.slice(0, 40)}...
+                              </p>
+                              <p className="ds-caption mt-1" style={{ color: mutedColor }}>
+                                {rec.relevance}
+                              </p>
+                              {rec.employmentSignal && (
+                                <span
+                                  className="ds-caption inline-block mt-2 px-2 py-1 rounded"
+                                  style={{
+                                    backgroundColor:
+                                      rec.employmentSignal === 'yes'
+                                        ? '#D4EDDA'
+                                        : rec.employmentSignal === 'open'
+                                          ? '#FFF3CD'
+                                          : '#E7E7E7',
+                                    color:
+                                      rec.employmentSignal === 'yes'
+                                        ? '#155724'
+                                        : rec.employmentSignal === 'open'
+                                          ? '#856404'
+                                          : '#666',
+                                  }}
+                                >
+                                  {rec.employmentSignal === 'yes'
+                                    ? '💼 Employment'
+                                    : rec.employmentSignal === 'open'
+                                      ? '🔄 Open'
+                                      : 'Academic'}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Recommended Supervisors & Experts */}
+                    {(recommendations.supervisors.length > 0 || recommendations.experts.length > 0) && (
+                      <div className="space-y-2">
+                        <p className="ds-label font-semibold" style={{ color: textColor }}>
+                          Recommended Contacts
+                        </p>
+                        <div className="space-y-2">
+                          {recommendations.supervisors.slice(0, 2).map((rec) => (
+                            <div
+                              key={rec.supervisor.id}
+                              className="rounded px-3 py-2"
+                              style={{
+                                backgroundColor: '#F5F5F5',
+                                border: `1px solid ${borderColor}`,
+                              }}
+                            >
+                              <p className="ds-small font-medium" style={{ color: textColor }}>
+                                {rec.supervisor.title} {rec.supervisor.firstName}
+                              </p>
+                              <p className="ds-caption" style={{ color: mutedColor }}>
+                                {rec.fieldMatch.map(getFieldName).join(' • ')}
+                              </p>
+                              <p className="ds-caption mt-1" style={{ color: mutedColor }}>
+                                {rec.relevance}
+                              </p>
+                            </div>
+                          ))}
+                          {recommendations.experts.slice(0, 2).map((rec) => (
+                            <div
+                              key={rec.expert.id}
+                              className="rounded px-3 py-2"
+                              style={{
+                                backgroundColor: '#F5F5F5',
+                                border: `1px solid ${borderColor}`,
+                              }}
+                            >
+                              <p className="ds-small font-medium" style={{ color: textColor }}>
+                                {rec.expert.firstName} {rec.expert.lastName}
+                              </p>
+                              <p className="ds-caption" style={{ color: mutedColor }}>
+                                {rec.fieldMatch.map(getFieldName).join(' • ')}
+                              </p>
+                              <p className="ds-caption mt-1" style={{ color: mutedColor }}>
+                                {rec.relevance}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Recommended Similar Projects */}
+                    {recommendations.similarProjects.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="ds-label font-semibold" style={{ color: textColor }}>
+                          Similar Projects
+                        </p>
+                        <div className="space-y-2">
+                          {recommendations.similarProjects.slice(0, 2).map((rec) => (
+                            <div
+                              key={rec.project.id}
+                              className="rounded px-3 py-2"
+                              style={{
+                                backgroundColor: '#F5F5F5',
+                                border: `1px solid ${borderColor}`,
+                              }}
+                            >
+                              <p className="ds-small font-medium" style={{ color: textColor }}>
+                                {rec.project.title.slice(0, 35)}...
+                              </p>
+                              <p className="ds-caption mt-1" style={{ color: mutedColor }}>
+                                Status: <strong>{rec.project.state}</strong>
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     )}
 
                     {/* Suggested contacts based on field overlap */}
@@ -653,9 +797,27 @@ function NodeMap({ stages, onSelect }: { stages: StageState[]; onSelect: (id: st
             height: '100%',
             objectFit: 'cover',
             display: 'block',
-            opacity: 0.12,
+            opacity: 0.24,
             position: 'absolute',
             inset: 0,
+          }}
+        />
+
+        {/* Second pass to make the map texture more visible without reducing readability */}
+        <img
+          src={mapImage}
+          alt="topographic map texture"
+          draggable={false}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            display: 'block',
+            opacity: 0.1,
+            position: 'absolute',
+            inset: 0,
+            mixBlendMode: 'multiply',
+            transform: 'scale(1.02)',
           }}
         />
 

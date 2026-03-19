@@ -37,11 +37,27 @@ export const STAGES = [
   },
   {
     id: 'writing',
-    label: 'Writing and Submitting',
+    label: 'Writing the Thesis',
     shortLabel: 'Writing',
-    description: 'Pulling it all together into a thesis you are proud of',
+    description: 'Pulling your research into a clear, defensible narrative',
     icon: '📄',
-    weeks: 'Weeks 16-24',
+    weeks: 'Weeks 16-22',
+  },
+  {
+    id: 'submission',
+    label: 'Submission and Defense',
+    shortLabel: 'Submission',
+    description: 'Final checks, submission, and preparing for review or defense',
+    icon: '✅',
+    weeks: 'Weeks 22-24',
+  },
+  {
+    id: 'apply_jobs',
+    label: 'Apply for Jobs',
+    shortLabel: 'Jobs',
+    description: 'Turn your thesis into a strong work sample for job applications',
+    icon: '💼',
+    weeks: 'Weeks 24+',
   },
 ]
 

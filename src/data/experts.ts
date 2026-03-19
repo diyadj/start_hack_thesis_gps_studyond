@@ -12,6 +12,7 @@ export interface Expert {
   offerInterviews: boolean
   about: string | null
   fieldIds: string[]
+  objectives?: string[] // Optional: recruiting, fresh_insights, education_collaboration, etc.
 }
 
 export const experts: Expert[] = [

@@ -35,11 +35,17 @@ Their topic area: "${topic || 'not decided yet'}"
 University: "${university}"
 Deadline: ${deadline} (${weeksLeft} weeks away, urgency: ${urgency})
 
-Give them ONE specific next action they should take today.
-Format: 
-- First line: the action in 10 words or less (bold it)
-- Then 2-3 sentences of concrete guidance
-- End with: "Time needed: [X hours/days]"
+Give them a structured action plan in JSON format.
+Return valid JSON with these fields:
+{
+  "action": string (one 5-10 word action in present tense, e.g. "Schedule meetings with supervisors"),
+  "rationale": string (1-2 sentences explaining why this action is important now),
+  "confidence": number (0-100, how confident you are this will help),
+  "blockers": string[] (potential obstacles they might face, array of 1-3 strings),
+  "suggested_contacts": string[] (IDs or names of contacts who could help, e.g. ["supervisor-01", "expert-05"])
+}
+
+Be specific. Reference real data when possible.
 `.trim()
 
 export const STUCK_PROMPT = ({
