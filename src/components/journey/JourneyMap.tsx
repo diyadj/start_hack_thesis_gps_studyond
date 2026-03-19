@@ -5,6 +5,7 @@ import { STAGES, URGENCY_MESSAGES } from '@/lib/copy'
 import { weeksUntil, getUrgency } from '@/lib/utils'
 import { useJourneyStore, type StageState } from '@/store/journeyStore'
 import { ActionCard } from '@/components/journey/ActionCard'
+import { StageWorkspace } from '@/components/journey/StageWorkspace'
 import { useMatches } from '@/hooks/useMatches'
 import { useRecommendations } from '@/hooks/useRecommendations'
 import { getFieldName, getUniversityName } from '@/data'
@@ -99,10 +100,9 @@ export function JourneyMap({ onStuck, onReset }: JourneyMapProps) {
     intake.topic,
     intake.fieldIds
   )
-  const orientationRecommendations = useRecommendations('orientation', intake.topic, intake.fieldIds)
   const supervisorRecommendations = useRecommendations('supervisor', intake.topic, intake.fieldIds)
   const activeStageId = (activeStage?.id as StageId | undefined) ?? 'orientation'
-  const hasPassedSupervisor = stages.find((s) => s.id === 'supervisor')?.status === 'done'
+
 
   const plannerItems = useMemo<PlannerItem[]>(() => {
     const managedStages: StageId[] = ['planning', 'execution', 'writing', 'submission', 'apply_jobs']
@@ -208,26 +208,36 @@ export function JourneyMap({ onStuck, onReset }: JourneyMapProps) {
         <div className="flex-1 overflow-y-auto border-r" style={{ borderColor }}>
           <div className="relative" style={{ height: 'min(68vh, 620px)', minHeight: 420 }}>
             <NodeMap stages={stages} onSelect={setSelectedStageId} />
+          </div>
 
-          {/* Stage detail overlay — positioned at top-right with z-index */}
-            <div className="absolute inset-0 flex items-start justify-end p-3 sm:p-6 pointer-events-none" style={{ zIndex: 10 }}>
-            <AnimatePresence mode="wait">
-              {selectedMeta && selectedStage && (
-                <motion.div
-                  key={selectedStage.id}
-                  variants={cardVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  className="pointer-events-auto scrollbar-hide rounded-lg shadow-lg mr-0 lg:mr-[280px]"
-                  style={{
-                    width: 'min(360px, calc(100vw - 24px))',
-                    maxHeight: 'calc(100vh - 120px)',
-                    overflowY: 'auto',
-                    backgroundColor: bgColor,
-                    border: `1px solid ${borderColor}`,
-                  }}
-                >
+          <StageWorkspace
+            activeStageId={((selectedStageId ?? activeStageId) as StageId)}
+            topic={intake.topic}
+            supervisorRecommendations={supervisorRecommendations}
+            plannerItems={plannerItems}
+            borderColor={borderColor}
+            textColor={textColor}
+            mutedColor={mutedColor}
+            accentBlue={accentBlue}
+          />
+        </div>
+
+        {/* Stage detail panel — right of map */}
+        <AnimatePresence mode="wait">
+          {selectedMeta && selectedStage && (
+            <motion.div
+              key={selectedStage.id}
+              variants={cardVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="flex-shrink-0 scrollbar-hide overflow-y-auto"
+              style={{
+                width: 360,
+                borderLeft: `1px solid ${borderColor}`,
+                backgroundColor: bgColor,
+              }}
+            >
                   {/* Card header */}
                   <div
                     className="flex items-center justify-between px-5 py-4 border-b"
@@ -573,21 +583,6 @@ export function JourneyMap({ onStuck, onReset }: JourneyMapProps) {
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
-          </div>
-
-          <StageWorkspace
-            activeStageId={activeStageId}
-            hasPassedSupervisor={hasPassedSupervisor}
-            orientationRecommendations={orientationRecommendations.topics}
-            supervisorRecommendations={supervisorRecommendations}
-            plannerItems={plannerItems}
-            borderColor={borderColor}
-            textColor={textColor}
-            mutedColor={mutedColor}
-            accentBlue={accentBlue}
-          />
-        </div>
 
         {/* ── Right Sidebar: Navigator, Current Phase, Milestones ── */}
         <div
@@ -755,230 +750,15 @@ export function JourneyMap({ onStuck, onReset }: JourneyMapProps) {
 
 // ── Topographic node map ───────────────────────────────────────────
 
-function StageWorkspace({
-  activeStageId,
-  hasPassedSupervisor,
-  orientationRecommendations,
-  supervisorRecommendations,
-  plannerItems,
-  borderColor,
-  textColor,
-  mutedColor,
-  accentBlue,
-}: {
-  activeStageId: StageId
-  hasPassedSupervisor: boolean
-  orientationRecommendations: Array<{
-    topic: { id: string; title: string; description: string; employment?: 'yes' | 'no' | 'open' }
-    relevance: string
-    employmentSignal?: 'yes' | 'no' | 'open'
-  }>
-  supervisorRecommendations: {
-    experts: Array<{
-      score: number
-      relevance: string
-      expert: { id: string; firstName: string; lastName: string; companyName?: string; title: string }
-    }>
-    supervisors: Array<{
-      score: number
-      relevance: string
-      supervisor: { id: string; firstName: string; lastName: string; title: string }
-    }>
-  }
-  plannerItems: Array<{
-    id: string
-    stageId: string
-    stageLabel: string
-    text: string
-    status: 'todo' | 'in_progress' | 'done'
-  }>
-  borderColor: string
-  textColor: string
-  mutedColor: string
-  accentBlue: string
-}) {
-  const topCompanies = Array.from(
-    new Map(
-      supervisorRecommendations.experts
-        .filter((r) => r.expert.companyName)
-        .map((r) => [r.expert.companyName as string, r])
-    ).values()
-  ).slice(0, 4)
-
-  const bestCompany = topCompanies[0]
-  const runnerUp = topCompanies[1]
-
-  const todoItems = plannerItems.filter((t) => t.status === 'todo')
-  const inProgressItems = plannerItems.filter((t) => t.status === 'in_progress')
-  const doneItems = plannerItems.filter((t) => t.status === 'done')
-
-  return (
-    <section className="px-4 sm:px-6 pb-8 pt-5" style={{ borderTop: `1px solid ${borderColor}` }}>
-      <div className="mb-4">
-        <h3 className="ds-title-sm font-semibold" style={{ color: textColor }}>
-          Stage Workspace
-        </h3>
-        <p className="ds-small" style={{ color: mutedColor }}>
-          Scroll for recommendations and project management tools for your current phase.
-        </p>
-      </div>
-
-      {activeStageId === 'orientation' && (
-        <div className="space-y-3">
-          <p className="ds-label font-semibold" style={{ color: textColor }}>Recommended Topics</p>
-          <div className="grid gap-3 md:grid-cols-2">
-            {orientationRecommendations.slice(0, 6).map((rec) => (
-              <article
-                key={rec.topic.id}
-                className="rounded-lg p-3"
-                style={{ border: `1px solid ${borderColor}`, backgroundColor: '#FFFFFF' }}
-              >
-                <p className="ds-small font-semibold" style={{ color: textColor }}>{rec.topic.title}</p>
-                <p className="ds-caption mt-1" style={{ color: mutedColor }}>
-                  {rec.topic.description.slice(0, 140)}...
-                </p>
-                <p className="ds-caption mt-2" style={{ color: mutedColor }}>{rec.relevance}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {activeStageId === 'supervisor' && (
-        <div className="space-y-4">
-          <p className="ds-label font-semibold" style={{ color: textColor }}>Top Sponsor / Company Matches</p>
-
-          <div className="grid gap-3 md:grid-cols-2">
-            {topCompanies.length === 0 && (
-              <div className="rounded-lg p-3" style={{ border: `1px solid ${borderColor}`, backgroundColor: '#FFFFFF' }}>
-                <p className="ds-small" style={{ color: mutedColor }}>
-                  Add or refine your topic to unlock stronger company matching.
-                </p>
-              </div>
-            )}
-
-            {topCompanies.map((rec) => (
-              <article
-                key={rec.expert.id}
-                className="rounded-lg p-3"
-                style={{ border: `1px solid ${borderColor}`, backgroundColor: '#FFFFFF' }}
-              >
-                <p className="ds-small font-semibold" style={{ color: textColor }}>
-                  {rec.expert.companyName}
-                </p>
-                <p className="ds-caption mt-1" style={{ color: mutedColor }}>
-                  Contact: {rec.expert.firstName} {rec.expert.lastName} ({rec.expert.title})
-                </p>
-                <p className="ds-caption mt-1" style={{ color: mutedColor }}>
-                  Match score: {Math.round(rec.score * 100)}%
-                </p>
-                <p className="ds-caption mt-1" style={{ color: mutedColor }}>{rec.relevance}</p>
-              </article>
-            ))}
-          </div>
-
-          <div className="rounded-lg p-4" style={{ border: `1px solid ${borderColor}`, backgroundColor: '#F8FAFF' }}>
-            <p className="ds-label font-semibold" style={{ color: accentBlue }}>AI Quick Comparison</p>
-            <p className="ds-small mt-2" style={{ color: textColor }}>
-              {bestCompany
-                ? `Best fit right now is ${bestCompany.expert.companyName}. It has the strongest match score (${Math.round(bestCompany.score * 100)}%) and relevant contact availability through ${bestCompany.expert.firstName} ${bestCompany.expert.lastName}.`
-                : 'No clear company lead yet. Sharpen your topic title to get a better recommendation.'}
-            </p>
-            {runnerUp && (
-              <p className="ds-small mt-2" style={{ color: mutedColor }}>
-                Runner-up: {runnerUp.expert.companyName} (${Math.round(runnerUp.score * 100)}%).
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {hasPassedSupervisor && (
-        <div className="space-y-4 mt-6">
-          <p className="ds-label font-semibold" style={{ color: textColor }}>
-            Project Manager Board
-          </p>
-
-          <div className="grid gap-3 lg:grid-cols-3">
-            <KanbanColumn
-              title="To Do"
-              items={todoItems}
-              borderColor={borderColor}
-              textColor={textColor}
-              mutedColor={mutedColor}
-            />
-            <KanbanColumn
-              title="In Progress"
-              items={inProgressItems}
-              borderColor={borderColor}
-              textColor={textColor}
-              mutedColor={mutedColor}
-            />
-            <KanbanColumn
-              title="Done"
-              items={doneItems}
-              borderColor={borderColor}
-              textColor={textColor}
-              mutedColor={mutedColor}
-            />
-          </div>
-
-          <div className="rounded-lg p-4" style={{ border: `1px solid ${borderColor}`, backgroundColor: '#FFFFFF' }}>
-            <p className="ds-label font-semibold" style={{ color: textColor }}>Things you still need to do</p>
-            <ul className="mt-2 space-y-1">
-              {todoItems.slice(0, 8).map((item) => (
-                <li key={item.id} className="ds-small" style={{ color: mutedColor }}>
-                  • [{item.stageLabel}] {item.text}
-                </li>
-              ))}
-              {todoItems.length === 0 && (
-                <li className="ds-small" style={{ color: mutedColor }}>All tracked tasks are complete for now.</li>
-              )}
-            </ul>
-          </div>
-        </div>
-      )}
-    </section>
-  )
-}
-
-function KanbanColumn({
-  title,
-  items,
-  borderColor,
-  textColor,
-  mutedColor,
-}: {
-  title: string
-  items: Array<{ id: string; stageLabel: string; text: string }>
-  borderColor: string
-  textColor: string
-  mutedColor: string
-}) {
-  return (
-    <div className="rounded-lg p-3" style={{ border: `1px solid ${borderColor}`, backgroundColor: '#FFFFFF' }}>
-      <p className="ds-small font-semibold" style={{ color: textColor }}>{title}</p>
-      <div className="mt-2 space-y-2">
-        {items.slice(0, 6).map((item) => (
-          <article key={item.id} className="rounded p-2" style={{ border: `1px solid ${borderColor}`, backgroundColor: '#FAFAFA' }}>
-            <p className="ds-caption" style={{ color: mutedColor }}>{item.stageLabel}</p>
-            <p className="ds-small" style={{ color: textColor }}>{item.text}</p>
-          </article>
-        ))}
-        {items.length === 0 && (
-          <p className="ds-caption" style={{ color: mutedColor }}>No items in this column.</p>
-        )}
-      </div>
-    </div>
-  )
-}
-
 function NodeMap({ stages, onSelect }: { stages: StageState[]; onSelect: (id: string) => void }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerSize, setContainerSize] = useState({ w: 800, h: 500 })
   const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>({})
+  const [pan, setPan] = useState({ x: 0, y: 0 })
   const dragRef = useRef<{ id: string; startX: number; startY: number; baseX: number; baseY: number } | null>(null)
+  const panRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null)
   const didDrag = useRef(false)
+  const didPan = useRef(false)
 
   useEffect(() => {
     const el = containerRef.current
@@ -1017,7 +797,8 @@ function NodeMap({ stages, onSelect }: { stages: StageState[]; onSelect: (id: st
     return [`M ${from.pos.x} ${from.pos.y} C ${cp1x} ${from.pos.y}, ${cp2x} ${to.pos.y}, ${to.pos.x} ${to.pos.y}`]
   })
 
-  function handlePointerDown(e: React.PointerEvent<HTMLButtonElement>, id: string) {
+  // ── Node drag handlers ──
+  function handleNodePointerDown(e: React.PointerEvent<HTMLButtonElement>, id: string) {
     e.currentTarget.setPointerCapture(e.pointerId)
     e.stopPropagation()
     didDrag.current = false
@@ -1025,7 +806,7 @@ function NodeMap({ stages, onSelect }: { stages: StageState[]; onSelect: (id: st
     dragRef.current = { id, startX: e.clientX, startY: e.clientY, baseX: pos.x, baseY: pos.y }
   }
 
-  function handlePointerMove(e: React.PointerEvent<HTMLButtonElement>) {
+  function handleNodePointerMove(e: React.PointerEvent<HTMLButtonElement>) {
     if (!dragRef.current) return
     const { id, startX, startY, baseX, baseY } = dragRef.current
     const dx = e.clientX - startX
@@ -1034,11 +815,30 @@ function NodeMap({ stages, onSelect }: { stages: StageState[]; onSelect: (id: st
     setPositions(prev => ({ ...prev, [id]: { x: baseX + dx, y: baseY + dy } }))
   }
 
-  function handlePointerUp(e: React.PointerEvent<HTMLButtonElement>, id: string) {
+  function handleNodePointerUp(e: React.PointerEvent<HTMLButtonElement>, id: string) {
     e.stopPropagation()
     dragRef.current = null
     if (!didDrag.current) onSelect(id)
     didDrag.current = false
+  }
+
+  // ── Map pan handlers (fires on background, not on nodes thanks to stopPropagation) ──
+  function handleMapPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    e.currentTarget.setPointerCapture(e.pointerId)
+    didPan.current = false
+    panRef.current = { startX: e.clientX, startY: e.clientY, baseX: pan.x, baseY: pan.y }
+  }
+
+  function handleMapPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!panRef.current) return
+    const dx = e.clientX - panRef.current.startX
+    const dy = e.clientY - panRef.current.startY
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) didPan.current = true
+    setPan({ x: panRef.current.baseX + dx, y: panRef.current.baseY + dy })
+  }
+
+  function handleMapPointerUp() {
+    panRef.current = null
   }
 
   const accentBlue = '#2563EB'
@@ -1089,7 +889,7 @@ function NodeMap({ stages, onSelect }: { stages: StageState[]; onSelect: (id: st
             height: '100%',
             objectFit: 'cover',
             display: 'block',
-            opacity: 0.62,
+            opacity: 0.22,
             position: 'absolute',
             inset: 0,
             mixBlendMode: 'multiply',
@@ -1107,58 +907,77 @@ function NodeMap({ stages, onSelect }: { stages: StageState[]; onSelect: (id: st
           }}
         />
 
-        {/* SVG lines — connect completed stages */}
-        <svg
-          viewBox={`0 0 ${containerSize.w} ${containerSize.h}`}
+        {/* Pannable layer: SVG lines + nodes */}
+        <div
+          onPointerDown={handleMapPointerDown}
+          onPointerMove={handleMapPointerMove}
+          onPointerUp={handleMapPointerUp}
           style={{
             position: 'absolute',
             inset: 0,
-            width: '100%',
-            height: '100%',
-            pointerEvents: 'none',
+            cursor: panRef.current ? 'grabbing' : 'grab',
             zIndex: 1,
           }}
         >
-          {segments.map((d, i) => (
-            <path
-              key={i}
-              d={d}
-              fill="none"
-              stroke={accentBlue}
-              strokeWidth="2"
-              opacity={0.3}
-              strokeLinecap="round"
-            />
-          ))}
-        </svg>
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              transform: `translate(${pan.x}px, ${pan.y}px)`,
+              willChange: 'transform',
+            }}
+          >
+            {/* SVG lines — connect completed stages */}
+            <svg
+              viewBox={`0 0 ${containerSize.w} ${containerSize.h}`}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+              }}
+            >
+              {segments.map((d, i) => (
+                <path
+                  key={i}
+                  d={d}
+                  fill="none"
+                  stroke={accentBlue}
+                  strokeWidth="2"
+                  opacity={0.3}
+                  strokeLinecap="round"
+                />
+              ))}
+            </svg>
 
-        {/* Draggable nodes */}
-        <div style={{ position: 'relative', width: '100%', height: '100%', zIndex: 2 }}>
-          {points.map((p) => {
-            const isDone = p.status === 'done'
-            const isAct  = p.status === 'active'
-            const Icon   = STAGE_ICONS[p.id as StageId]
-            return (
-              <div
-                key={p.id}
-                style={{
-                  position: 'absolute',
-                  left: p.pos.x,
-                  top:  p.pos.y,
-                  transform: 'translate(-50%, -50%)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 6,
-                  userSelect: 'none',
-                }}
-              >
-                <motion.button
-                  whileHover={{ scale: 1.12 }}
-                  whileTap={{ scale: 0.95 }}
-                  onPointerDown={(e) => handlePointerDown(e, p.id)}
-                  onPointerMove={handlePointerMove}
-                  onPointerUp={(e) => handlePointerUp(e, p.id)}
+            {/* Nodes */}
+            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+              {points.map((p) => {
+                const isDone = p.status === 'done'
+                const isAct  = p.status === 'active'
+                const Icon   = STAGE_ICONS[p.id as StageId]
+                return (
+                  <div
+                    key={p.id}
+                    style={{
+                      position: 'absolute',
+                      left: p.pos.x,
+                      top:  p.pos.y,
+                      transform: 'translate(-50%, -50%)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 6,
+                      userSelect: 'none',
+                    }}
+                  >
+                    <motion.button
+                      whileHover={{ scale: 1.12 }}
+                      whileTap={{ scale: 0.95 }}
+                      onPointerDown={(e) => handleNodePointerDown(e, p.id)}
+                      onPointerMove={handleNodePointerMove}
+                      onPointerUp={(e) => handleNodePointerUp(e, p.id)}
                   style={{
                     width: 44,
                     height: 44,
@@ -1206,8 +1025,10 @@ function NodeMap({ stages, onSelect }: { stages: StageState[]; onSelect: (id: st
               </div>
             )
           })}
-        </div>
-      </div>
+            </div>{/* /nodes */}
+          </div>{/* /transform */}
+        </div>{/* /pannable */}
+      </div>{/* /containerRef */}
     </div>
   )
 }
