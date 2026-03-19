@@ -91,7 +91,27 @@ export function StageWorkspace({
         />
       )}
 
-      {!['orientation', 'supervisor'].includes(activeStageId) && (
+      {activeStageId === 'application' && (
+        <ApplicationWorkspace
+          topic={topic}
+          applicationRecommendations={applicationRecommendations}
+          borderColor={borderColor}
+          textColor={textColor}
+          mutedColor={mutedColor}
+          accentBlue={accentBlue}
+        />
+      )}
+
+      {activeStageId === 'writing' && (
+        <WritingWorkspace
+          borderColor={borderColor}
+          textColor={textColor}
+          mutedColor={mutedColor}
+          accentBlue={accentBlue}
+        />
+      )}
+
+      {!['orientation', 'supervisor', 'application', 'writing'].includes(activeStageId) && (
         <PlannerWorkspace
           plannerItems={plannerItems}
           borderColor={borderColor}
