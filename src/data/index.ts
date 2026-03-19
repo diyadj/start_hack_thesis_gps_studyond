@@ -6,3 +6,5 @@ export type { Supervisor } from './supervisors'
 
 export { experts } from './experts'
 export type { Expert } from './experts'
+
+export { universities, getUniversityName } from './universities'

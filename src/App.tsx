@@ -1,5 +1,5 @@
 import './App.css'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useJourneyStore } from '@/store/journeyStore'
 import { LandingPage } from '@/components/landing/LandingPage'
 import { IntakeForm } from '@/components/intake/IntakeForm'
@@ -11,9 +11,19 @@ import StudyondLogo from '@/assets/studyond.svg'
 type AppView = 'landing' | 'intake' | 'journey'
 
 export default function App() {
-  const { startJourney } = useJourneyStore()
+  const { startJourney, hasStarted } = useJourneyStore()
   const [stuckStageId, setStuckStageId] = useState<string | null>(null)
-  const [appView, setAppView] = useState<AppView>('landing')
+  const [appView, setAppView] = useState<AppView>(hasStarted ? 'journey' : 'landing')
+
+  useEffect(() => {
+    if (hasStarted && appView === 'landing') {
+      setAppView('journey')
+    }
+
+    if (!hasStarted && appView === 'journey') {
+      setAppView('intake')
+    }
+  }, [appView, hasStarted])
 
   const handleLandingSelect = () => {
     setAppView('intake')
@@ -58,7 +68,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => setAppView(appView === 'journey' ? 'intake' : 'journey')}
+                onClick={() => setAppView(hasStarted ? 'journey' : 'intake')}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
                   appView === 'journey' || appView === 'intake'
                     ? 'bg-blue-50 text-blue-600' 

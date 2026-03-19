@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { GraduationCap, Briefcase, Mail } from 'lucide-react'
 import { MATCH } from '@/lib/copy'
-import { getFieldName } from '@/data'
+import { getFieldName, getUniversityName } from '@/data'
 import { useMatches } from '@/hooks/useMatches'
 import { OutreachDialog } from '@/components/outreach/OutreachDialog'
 
@@ -50,7 +50,7 @@ export function MatchSection({ studentFieldIds, studentTopic, studentName = 'Stu
                       {MATCH.supervisorBadge}
                     </span>
                   </div>
-                  <p className="ds-small text-muted-foreground">{supervisor.universityId}</p>
+                  <p className="ds-small text-muted-foreground">{getUniversityName(supervisor.universityId)}</p>
                 </div>
               </div>
               <span className="ds-label font-medium text-ai-solid flex-shrink-0">
@@ -82,7 +82,7 @@ export function MatchSection({ studentFieldIds, studentTopic, studentName = 'Stu
                 setOutreachTarget({
                   name: `${supervisor.title} ${supervisor.firstName} ${supervisor.lastName}`,
                   role: 'Supervisor',
-                  org: supervisor.universityId,
+                  org: getUniversityName(supervisor.universityId),
                   matchReason: `Overlapping research interests in: ${overlappingFields.map(getFieldName).join(', ')}`,
                 })
               }
