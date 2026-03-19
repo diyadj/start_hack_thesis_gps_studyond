@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Compass, User, Calendar, Zap, PenLine, Check } from 'lucide-react'
 import { STAGES, JOURNEY, URGENCY_MESSAGES } from '@/lib/copy'
@@ -33,6 +33,18 @@ const T = {
   selectedBg:  'rgba(37,99,235,0.08)',
   danger:      '#dc2626',
   warn:        '#d97706',
+}
+
+// Sidebar theme (mirrors T)
+const S = {
+  bg:          '#ffffff',
+  cardBg:      '#f8fafc',
+  border:      '#e2e8f0',
+  cyan:        '#2563eb',
+  cyanMuted:   '#3b82f6',
+  text:        '#1e293b',
+  muted:       '#94a3b8',
+  hover:       '#eff6ff',
 }
 
 const STAGE_TASKS: Record<string, string[]> = {
@@ -131,74 +143,135 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
 
         {/* ── Left Sidebar ── */}
         <div
-          className="flex flex-col flex-shrink-0"
-          style={{ width: 220, background: T.barBg, borderRight: `1px solid ${T.border}` }}
+          className="flex flex-col flex-shrink-0 overflow-y-auto scrollbar-hide"
+          style={{ width: 260, background: S.bg, borderRight: `1px solid ${S.border}`, fontFamily: "'Courier New', Courier, monospace" }}
         >
-          {/* Navigator header */}
-          <div className="px-5 pt-5 pb-3" style={{ borderBottom: `1px solid ${T.border}` }}>
-            <p className="text-xs font-bold" style={{ color: T.accent, letterSpacing: '0.15em' }}>
-              NAVIGATOR_CORE
-            </p>
-            <p className="text-xs mt-1" style={{ color: urgencyColor, letterSpacing: '0.12em' }}>
-              {pct}%_COMPLETE
+          {/* Header */}
+          <div className="px-5 pt-6 pb-4" style={{ borderBottom: `1px solid ${S.border}` }}>
+            <div className="flex items-center gap-2 mb-1">
+              <Compass size={16} color={S.cyan} strokeWidth={2} />
+              <span className="font-bold text-sm" style={{ color: S.cyan, letterSpacing: '0.18em' }}>NAVIGATOR</span>
+            </div>
+            <span className="text-xs" style={{ color: S.muted, letterSpacing: '0.12em' }}>&gt; THESIS_GPS_ACTIVE</span>
+          </div>
+
+          {/* Global Progress */}
+          <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs" style={{ color: S.muted, letterSpacing: '0.14em' }}>GLOBAL PROGRESS</span>
+              <span className="text-sm font-bold" style={{ color: S.cyan, letterSpacing: '0.05em' }}>{pct}%</span>
+            </div>
+            <div style={{ height: 4, background: S.border, borderRadius: 2, overflow: 'hidden' }}>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${pct}%` }}
+                transition={{ duration: 0.8, ease: 'easeOut' }}
+                style={{ height: '100%', background: S.cyan, borderRadius: 2 }}
+              />
+            </div>
+            <p className="text-xs mt-2" style={{ color: S.muted, letterSpacing: '0.1em' }}>
+              EST. COMPLETION: {Math.max(1, Math.round(weeksLeft / 4))} MONTHS
             </p>
           </div>
 
-          {/* Stage list */}
-          <div className="flex-1 py-3 space-y-0.5 overflow-y-auto scrollbar-hide">
-            {stages.map((st, i) => {
-              const meta   = STAGES.find((s) => s.id === st.id)
-              const isDone = st.status === 'done'
-              const isAct  = st.status === 'active'
-              return (
-                <motion.div
-                  key={st.id}
-                  custom={i}
-                  variants={sidebarItem}
-                  initial="hidden"
-                  animate="visible"
-                  onClick={() => setSelectedStageId((prev) => prev === st.id ? null : st.id)}
-                  className="flex items-center gap-2 px-4 py-2 text-xs"
-                  style={{
-                    borderLeft: isAct ? `3px solid ${T.accent}` : selectedStageId === st.id ? `3px solid ${T.accentMuted}` : '3px solid transparent',
-                    color: isDone ? T.userMuted : isAct ? T.accent : T.userMuted,
-                    opacity: isDone ? 0.65 : isAct ? 1 : 0.55,
-                    letterSpacing: '0.12em',
-                    fontWeight: isAct ? 'bold' : 'normal',
-                    cursor: 'pointer',
-                    background: selectedStageId === st.id ? T.selectedBg : 'transparent',
-                  }}
-                  onMouseEnter={(e) => { if (selectedStageId !== st.id) (e.currentTarget as HTMLElement).style.background = T.hoverBg }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = selectedStageId === st.id ? T.selectedBg : 'transparent' }}
-                >
-                  <span style={{ width: 20, height: 20, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 3, background: isDone ? T.accentMuted : isAct ? T.accent : T.border }}>
-                    {isDone
-                      ? <Check size={11} color="#fff" strokeWidth={2.5} />
-                      : (() => { const Icon = STAGE_ICONS[st.id as StageId]; return <Icon size={11} color={isAct ? '#fff' : T.userMuted} strokeWidth={2} /> })()
-                    }
-                  </span>
-                  <span>{meta?.shortLabel?.toUpperCase() ?? st.id.toUpperCase()}</span>
-                </motion.div>
-              )
-            })}
+          {/* Current Phase */}
+          {activeStage && (() => {
+            const activeMeta = STAGES.find((s) => s.id === activeStage.id)
+            return (
+              <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
+                <p className="text-xs mb-3" style={{ color: S.muted, letterSpacing: '0.14em' }}>CURRENT PHASE</p>
+                <div className="p-3" style={{ background: S.cardBg, border: `1px solid ${S.border}`, borderRadius: 4 }}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <motion.div
+                      animate={{ opacity: [1, 0.3, 1] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                      style={{ width: 8, height: 8, borderRadius: '50%', background: S.cyan, flexShrink: 0 }}
+                    />
+                    <span className="text-sm font-bold" style={{ color: S.text, letterSpacing: '0.05em' }}>
+                      {activeMeta?.label ?? activeStage.id}
+                    </span>
+                  </div>
+                  <p className="text-xs mb-3" style={{ color: S.muted, lineHeight: 1.5 }}>
+                    {activeMeta?.description ?? ''}
+                  </p>
+                  <button
+                    onClick={() => setSelectedStageId(activeStage.id)}
+                    className="w-full text-xs py-2 font-bold transition-colors"
+                    style={{ background: 'transparent', border: `1px solid ${S.cyan}`, color: S.cyan, cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '0.14em', borderRadius: 2 }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = S.cyanMuted + '33' }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+                  >
+                    VIEW DETAILS
+                  </button>
+                </div>
+              </div>
+            )
+          })()}
+
+          {/* Milestones */}
+          <div className="px-5 py-4 flex-1">
+            <p className="text-xs mb-3" style={{ color: S.muted, letterSpacing: '0.14em' }}>MILESTONES</p>
+            <div className="space-y-1">
+              {stages.map((st, i) => {
+                const meta   = STAGES.find((s) => s.id === st.id)
+                const isDone = st.status === 'done'
+                const isAct  = st.status === 'active'
+                const isLocked = st.status === 'not_started'
+                return (
+                  <motion.div
+                    key={st.id}
+                    custom={i}
+                    variants={sidebarItem}
+                    initial="hidden"
+                    animate="visible"
+                    onClick={() => setSelectedStageId((prev) => prev === st.id ? null : st.id)}
+                    className="flex items-start gap-3 px-2 py-2 rounded cursor-pointer transition-colors"
+                    style={{ background: selectedStageId === st.id ? S.hover : 'transparent' }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = S.hover }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = selectedStageId === st.id ? S.hover : 'transparent' }}
+                  >
+                    {/* Icon */}
+                    <div style={{ flexShrink: 0, marginTop: 1 }}>
+                      {isDone ? (
+                        <div style={{ width: 18, height: 18, borderRadius: '50%', background: S.cyan, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Check size={11} color={S.bg} strokeWidth={3} />
+                        </div>
+                      ) : isAct ? (
+                        <div style={{ width: 18, height: 18, borderRadius: '50%', border: `2px solid ${S.cyan}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <div style={{ width: 7, height: 7, borderRadius: '50%', background: S.cyan }} />
+                        </div>
+                      ) : (
+                        <div style={{ width: 18, height: 18, borderRadius: '50%', border: `2px solid ${S.border}` }} />
+                      )}
+                    </div>
+                    {/* Label */}
+                    <div>
+                      <p className="text-xs" style={{
+                        color: isAct ? S.text : isDone ? S.muted : S.muted,
+                        fontWeight: isAct ? 'bold' : 'normal',
+                        textDecoration: isDone ? 'line-through' : 'none',
+                        letterSpacing: '0.05em',
+                      }}>
+                        {meta?.label ?? st.id}
+                      </p>
+                      <p className="text-xs mt-0.5" style={{ color: isAct ? S.cyan : S.muted, letterSpacing: '0.1em', fontSize: 10 }}>
+                        {isAct ? '> ACTIVE_NODE' : isDone ? 'COMPLETED' : 'LOCKED'}
+                      </p>
+                    </div>
+                  </motion.div>
+                )
+              })}
+            </div>
           </div>
 
-          {/* Bottom buttons */}
-          <div className="px-4 py-4 space-y-2" style={{ borderTop: `1px solid ${T.border}` }}>
-            <button
-              className="w-full text-xs py-2 px-3 text-left transition-colors"
-              style={{ border: `1px solid ${T.border}`, color: T.accent, background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '0.1em' }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = T.hoverBg }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
-            >
-              [GENERATE_REPORT]
-            </button>
+          {/* Bottom */}
+          <div className="px-5 py-4" style={{ borderTop: `1px solid ${S.border}` }}>
             <button
               onClick={resetJourney}
               className="w-full text-xs py-1.5 px-3 text-left flex items-center gap-2 transition-colors"
-              style={{ color: T.userMuted, background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '0.1em' }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = T.accent }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = T.userMuted }}
+              style={{ color: S.muted, background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '0.1em' }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = S.cyan }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = S.muted }}
             >
               <span>⚙</span><span>SETTINGS</span>
             </button>
@@ -430,120 +503,167 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
   )
 }
 
-// ── Draggable topographic node map ───────────────────────────────────────────
+// ── Topographic node map ───────────────────────────────────────────
 
 function NodeMap({ stages, onSelect }: { stages: StageState[]; onSelect: (id: string) => void }) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const isDragging   = useRef(false)
-  const [constraints, setConstraints] = useState({ left: -700, right: 0, top: -350, bottom: 0 })
+  const [containerSize, setContainerSize] = useState({ w: 800, h: 500 })
+  const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>({})
+  const dragRef = useRef<{ id: string; startX: number; startY: number; baseX: number; baseY: number } | null>(null)
+  const didDrag = useRef(false)
 
   useEffect(() => {
-    if (!containerRef.current) return
     const el = containerRef.current
-    setConstraints({
-      left:  -(el.offsetWidth  * 0.62),
-      right:  0,
-      top:   -(el.offsetHeight * 0.62),
-      bottom: 0,
-    })
+    if (!el) return
+    const update = () => {
+      const w = el.offsetWidth, h = el.offsetHeight
+      setContainerSize({ w, h })
+      setPositions(prev => {
+        const next: Record<string, { x: number; y: number }> = {}
+        NODE_POSITIONS.forEach(n => {
+          // keep user-dragged positions; only init missing ones
+          next[n.id] = prev[n.id] ?? { x: (n.x / 240) * w, y: (n.y / 150) * h }
+        })
+        return next
+      })
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
   }, [])
 
   const stageStatusMap: Record<string, string> = {}
   stages.forEach((s) => { stageStatusMap[s.id] = s.status })
 
-  const points = NODE_POSITIONS.map((n) => ({ ...n, status: stageStatusMap[n.id] ?? 'not_started' }))
+  const points = NODE_POSITIONS.map((n) => ({
+    ...n,
+    status: stageStatusMap[n.id] ?? 'not_started',
+    pos: positions[n.id] ?? { x: (n.x / 240) * containerSize.w, y: (n.y / 150) * containerSize.h },
+  }))
 
-  // Build individual bezier segments — only between consecutive done nodes
   const segments = points.slice(0, -1).flatMap((from, i) => {
     if (from.status !== 'done') return []
     const to   = points[i + 1]
-    const cp1x = from.x + (to.x - from.x) * 0.45
-    const cp2x = to.x   - (to.x - from.x) * 0.45
-    return [`M ${from.x} ${from.y} C ${cp1x} ${from.y}, ${cp2x} ${to.y}, ${to.x} ${to.y}`]
+    const cp1x = from.pos.x + (to.pos.x - from.pos.x) * 0.45
+    const cp2x = to.pos.x   - (to.pos.x - from.pos.x) * 0.45
+    return [`M ${from.pos.x} ${from.pos.y} C ${cp1x} ${from.pos.y}, ${cp2x} ${to.pos.y}, ${to.pos.x} ${to.pos.y}`]
   })
 
-  return (
-    <div ref={containerRef} className="absolute inset-0 overflow-hidden" style={{ cursor: 'grab' }}>
-      <motion.div
-        drag
-        dragConstraints={constraints}
-        dragElastic={0.06}
-        onDragStart={() => { isDragging.current = true }}
-        onDragEnd={()   => { setTimeout(() => { isDragging.current = false }, 50) }}
-        whileDrag={{ cursor: 'grabbing' }}
-        style={{ width: '162%', height: '162%', position: 'absolute', top: 0, left: 0 }}
-      >
-        {/* Topographic map image — framed */}
-        <div style={{
-          position: 'absolute', inset: 0, margin: 32,
-          border: `1px solid ${T.border}`, borderRadius: 4,
-          overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-        }}>
-          <img
-            src={mapImage} alt="topographic map" draggable={false}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: 0.9 }}
-          />
-        </div>
+  function handlePointerDown(e: React.PointerEvent<HTMLButtonElement>, id: string) {
+    e.currentTarget.setPointerCapture(e.pointerId)
+    e.stopPropagation()
+    didDrag.current = false
+    const pos = positions[id] ?? { x: 0, y: 0 }
+    dragRef.current = { id, startX: e.clientX, startY: e.clientY, baseX: pos.x, baseY: pos.y }
+  }
 
-        {/* SVG — only the done route segments */}
+  function handlePointerMove(e: React.PointerEvent<HTMLButtonElement>) {
+    if (!dragRef.current) return
+    const { id, startX, startY, baseX, baseY } = dragRef.current
+    const dx = e.clientX - startX
+    const dy = e.clientY - startY
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) didDrag.current = true
+    setPositions(prev => ({ ...prev, [id]: { x: baseX + dx, y: baseY + dy } }))
+  }
+
+  function handlePointerUp(e: React.PointerEvent<HTMLButtonElement>, id: string) {
+    e.stopPropagation()
+    dragRef.current = null
+    if (!didDrag.current) onSelect(id)
+    didDrag.current = false
+  }
+
+  return (
+    <div
+      className="absolute inset-0 flex items-center justify-center"
+      style={{ padding: 32 }}
+    >
+      <div
+        ref={containerRef}
+        style={{
+          position: 'relative',
+          width: '100%', height: '100%',
+          border: `1px solid ${T.border}`,
+          borderRadius: 4,
+          overflow: 'hidden',
+          boxShadow: '0 2px 16px rgba(0,0,0,0.08)',
+        }}
+      >
+        {/* Background + map image */}
+        <div style={{ position: 'absolute', inset: 0, background: '#F3F5F6' }} />
+        <img
+          src={mapImage} alt="topographic map" draggable={false}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: 0.35, position: 'relative' }}
+        />
+
+        {/* SVG lines — pixel coords matching container size */}
         <svg
-          viewBox="0 0 240 150"
-          preserveAspectRatio="xMinYMin meet"
-          style={{ width: '100%', height: '100%', display: 'block', position: 'absolute', inset: 0, pointerEvents: 'none' }}
+          viewBox={`0 0 ${containerSize.w} ${containerSize.h}`}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
         >
           {segments.map((d, i) => (
-            <path key={i} d={d} fill="none" stroke={T.accent} strokeWidth="0.6" opacity={0.5} />
+            <path key={i} d={d} fill="none" stroke={T.accent} strokeWidth="2" opacity={0.5} />
           ))}
         </svg>
 
-        {/* Node squares — HTML buttons positioned over the map */}
+        {/* Draggable nodes */}
         {points.map((p) => {
           const isDone = p.status === 'done'
           const isAct  = p.status === 'active'
           const Icon   = STAGE_ICONS[p.id as StageId]
           return (
-            <div key={p.id} style={{
-              position: 'absolute',
-              left: `${(p.x / 240) * 100}%`,
-              top:  `${(p.y / 150) * 100}%`,
-              transform: 'translate(-50%, -50%)',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-            }}>
+            <div
+              key={p.id}
+              style={{
+                position: 'absolute',
+                left: p.pos.x,
+                top:  p.pos.y,
+                transform: 'translate(-50%, -50%)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+                userSelect: 'none',
+              }}
+            >
               <motion.button
                 whileHover={{ scale: 1.12 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => { if (!isDragging.current) onSelect(p.id) }}
+                onPointerDown={(e) => handlePointerDown(e, p.id)}
+                onPointerMove={handlePointerMove}
+                onPointerUp={(e) => handlePointerUp(e, p.id)}
                 style={{
-                  width: 28, height: 28,
+                  width: 40, height: 40,
                   background: isAct ? T.accent : isDone ? T.accentMuted : T.terminalBg,
-                  border: `1.5px solid ${isAct ? T.accent : isDone ? T.accentMuted : T.border}`,
-                  borderRadius: 4,
+                  border: `2px solid ${isAct ? T.accent : isDone ? T.accentMuted : T.border}`,
+                  borderRadius: 5,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer',
+                  cursor: 'grab',
+                  touchAction: 'none',
                   boxShadow: isAct
-                    ? `0 0 0 4px ${T.accent}28, 0 2px 8px rgba(0,0,0,0.15)`
-                    : '0 1px 4px rgba(0,0,0,0.12)',
-                  opacity: isAct ? 1 : isDone ? 0.9 : 0.5,
+                    ? `0 0 0 5px ${T.accent}28, 0 2px 10px rgba(0,0,0,0.18)`
+                    : '0 1px 6px rgba(0,0,0,0.14)',
+                  opacity: isAct ? 1 : isDone ? 0.9 : 0.55,
                 }}
               >
                 {isDone
-                  ? <Check size={13} color="#fff" strokeWidth={2.5} />
-                  : <Icon  size={13} color={isAct ? '#fff' : T.userMuted} strokeWidth={2} />
+                  ? <Check size={17} color="#fff" strokeWidth={2.5} />
+                  : <Icon  size={17} color={isAct ? '#fff' : T.userMuted} strokeWidth={2} />
                 }
               </motion.button>
               <span style={{
-                fontSize: 8, letterSpacing: '0.08em',
+                fontSize: 9, letterSpacing: '0.08em',
                 color: isAct ? T.accent : isDone ? T.accentMuted : T.userMuted,
-                opacity: isAct ? 1 : isDone ? 0.7 : 0.4,
+                opacity: isAct ? 1 : isDone ? 0.7 : 0.45,
                 fontFamily: "'Courier New', monospace",
                 pointerEvents: 'none',
+                background: 'rgba(240,244,248,0.75)',
+                padding: '1px 4px',
               }}>
                 {p.stageName}
               </span>
             </div>
           )
         })}
-      </motion.div>
+      </div>
     </div>
   )
 }
