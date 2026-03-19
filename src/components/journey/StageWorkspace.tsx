@@ -1,8 +1,9 @@
 import { OrientationWorkspace } from './stages/OrientationWorkspace'
 import { SupervisorWorkspace } from './stages/SupervisorWorkspace'
+import { ApplicationWorkspace } from './stages/ApplicationWorkspace'
 import { PlannerWorkspace } from './stages/PlannerWorkspace'
 
-type StageId = 'orientation' | 'supervisor' | 'planning' | 'execution' | 'writing' | 'submission' | 'apply_jobs'
+type StageId = 'orientation' | 'supervisor' | 'application' | 'planning' | 'execution' | 'writing' | 'submission' | 'apply_jobs'
 
 type PlannerItem = {
   id: string
@@ -15,6 +16,19 @@ type PlannerItem = {
 interface StageWorkspaceProps {
   activeStageId: StageId
   topic: string
+  applicationRecommendations: {
+    topics: Array<{
+      score: number
+      relevance: string
+      topic: {
+        id: string
+        title: string
+        description: string
+        companyId: string | null
+        universityId: string | null
+      }
+    }>
+  }
   supervisorRecommendations: {
     experts: Array<{
       score: number
@@ -37,6 +51,7 @@ interface StageWorkspaceProps {
 export function StageWorkspace({
   activeStageId,
   topic,
+  applicationRecommendations,
   supervisorRecommendations,
   plannerItems,
   borderColor,
@@ -75,7 +90,18 @@ export function StageWorkspace({
         />
       )}
 
-      {!['orientation', 'supervisor'].includes(activeStageId) && (
+      {activeStageId === 'application' && (
+        <ApplicationWorkspace
+          topic={topic}
+          applicationRecommendations={applicationRecommendations}
+          borderColor={borderColor}
+          textColor={textColor}
+          mutedColor={mutedColor}
+          accentBlue={accentBlue}
+        />
+      )}
+
+      {!['orientation', 'supervisor', 'application'].includes(activeStageId) && (
         <PlannerWorkspace
           plannerItems={plannerItems}
           borderColor={borderColor}

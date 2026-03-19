@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { projects, topics, supervisors, experts } from '../data'
 import type { Project, Topic } from '../data'
 
-type StageId = 'orientation' | 'supervisor' | 'planning' | 'execution' | 'writing' | 'submission' | 'apply_jobs'
+type StageId = 'orientation' | 'supervisor' | 'application' | 'planning' | 'execution' | 'writing' | 'submission' | 'apply_jobs'
 
 interface RecommendedTopic {
   topic: Topic
@@ -69,6 +69,14 @@ export function useRecommendations(
           supervisors: recommendSupervisorsForTopic(selectedTopic),
           experts: recommendExpertsForTopic(selectedTopic),
           topics: recommendTopicsForOrientation(fieldIds), // Keep topic suggestions available
+        }
+
+      case 'application':
+        return {
+          ...result,
+          topics: recommendApplicationTopics(fieldIds),
+          experts: recommendExpertsForTopic(selectedTopic),
+          supervisors: recommendSupervisorsForTopic(selectedTopic),
         }
 
       case 'planning':
@@ -283,6 +291,34 @@ function recommendJobTopics(fieldIds: string[]): RecommendedTopic[] {
     })
     .sort((a, b) => b.score - a.score)
     .slice(0, 5)
+}
+
+function recommendApplicationTopics(fieldIds: string[]): RecommendedTopic[] {
+  return (topics as Topic[])
+    .map((topic) => {
+      const fieldMatch = topic.fieldIds.filter((f) => fieldIds.includes(f)).length
+      const projectTypeBonus = topic.companyId || topic.universityId ? 0.2 : 0
+      const score =
+        (fieldMatch > 0 ? 0.5 : 0) +
+        (topic.employment === 'yes' ? 0.2 : 0) +
+        (topic.employment === 'open' ? 0.1 : 0) +
+        projectTypeBonus
+
+      return {
+        topic,
+        score,
+        relevance:
+          topic.companyId
+            ? `${fieldMatch > 0 ? `${fieldMatch} field match • ` : ''}Company project track`
+            : topic.universityId
+              ? `${fieldMatch > 0 ? `${fieldMatch} field match • ` : ''}University project track`
+              : `${fieldMatch > 0 ? `${fieldMatch} field match` : 'General fit'}`,
+        employmentSignal: topic.employment,
+        similarProjects: [],
+      }
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 8)
 }
 
 /**
