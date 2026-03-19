@@ -1,155 +1,51 @@
 /* ==========================================================================
-   Thesis GPS — Design System CSS
-   Based on Studyond brand tokens
+   Studyond GPS � Minimalist Design System
    ========================================================================== */
 
 @import 'tailwindcss';
 
-@custom-variant dark (&:is(.dark *));
-
-@theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-destructive: var(--destructive);
+body {
+  @apply bg-white text-gray-900 antialiased;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Light theme */
-:root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+/* Typography */
+.text-title-sm { @apply text-xl font-semibold leading-snug; }
+.text-title-md { @apply text-2xl font-semibold leading-snug; }
+.text-title-lg { @apply text-3xl font-semibold leading-snug; }
+.text-body { @apply text-base font-normal leading-relaxed; }
+.text-secondary { @apply text-gray-600; }
+.text-tertiary { @apply text-gray-500; }
+
+/* Cards & Surfaces */
+.card { @apply bg-gray-50 border border-gray-200 rounded-lg; }
+.card:hover { @apply border-gray-300; }
+
+/* Inputs */
+input, textarea, select {
+  @apply bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 
+         placeholder:text-gray-500 focus:outline-none focus:border-blue-400 
+         focus:ring-1 focus:ring-blue-200 transition-all duration-200;
 }
 
-/* Dark theme */
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-}
+/* Buttons */
+.btn { @apply px-6 py-3 rounded-lg font-medium transition-colors duration-200; }
+.btn-primary { @apply bg-blue-600 text-white hover:bg-blue-700; }
+.btn-secondary { @apply bg-gray-200 text-gray-900 hover:bg-gray-300 border border-gray-300; }
+.btn-ghost { @apply text-gray-900 hover:bg-gray-100; }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}
+/* Layout */
+.container-max { @apply max-w-7xl mx-auto; }
+.container-narrow { @apply max-w-2xl mx-auto; }
+.grid-2col { @apply grid grid-cols-1 md:grid-cols-2 gap-6; }
+.space-section { @apply py-16 px-8; }
 
-/* ==========================================================================
-   AI Accent Utilities
-   ========================================================================== */
+/* Focus states */
+*:focus-visible { @apply outline-2 outline-offset-2 outline-blue-400; }
 
-.text-ai {
-  @apply text-transparent bg-gradient-to-r from-purple-500 via-blue-700 to-blue-500 bg-clip-text;
-}
-
-.bg-ai {
-  @apply bg-gradient-to-r from-purple-700 via-blue-600 to-purple-700 text-white;
-}
-
-.text-ai-solid {
-  @apply text-blue-600;
-}
-
-.border-ai {
-  @apply border-blue-200;
-}
-
-/* ==========================================================================
-   Typography
-   ========================================================================== */
-
-html {
-  font-family: "Avenir Next", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, Helvetica, Arial, sans-serif;
-}
-
-.ds-caption     { font-size: 12px; font-weight: 400; line-height: 16px; }
-.ds-badge       { font-size: 12px; font-weight: 500; line-height: 16px; }
-.ds-label       { font-size: 14px; font-weight: 500; line-height: 20px; }
-.ds-small       { font-size: 14px; font-weight: 400; line-height: 20px; }
-.ds-body        { font-size: 16px; font-weight: 400; line-height: 24px; }
-.ds-title-cards { font-size: 18px; font-weight: 500; line-height: 24px; }
-.ds-title-sm    { font-size: 20px; font-weight: 500; line-height: 28px; }
-.ds-title-md    { font-size: 24px; font-weight: 500; line-height: 32px; }
-.ds-title-lg    { font-size: 30px; font-weight: 500; line-height: 36px; }
-.ds-title-xl    { font-size: 36px; font-weight: 500; line-height: 40px; }
-
-.header-xl { @apply text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl; }
-.header-lg { @apply text-2xl font-semibold tracking-tight sm:text-2xl lg:text-3xl; }
-.header-md { @apply text-2xl font-semibold tracking-tight; }
-.header-sm { @apply text-base font-medium leading-tight tracking-tight sm:text-lg lg:text-xl; }
-
-/* ==========================================================================
-   Layout
-   ========================================================================== */
-
-.grid-3-col {
-  @apply grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3;
-}
-
-.grid-4-col {
-  @apply grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
-}
-
-.ds-layout-narrow     { @apply md:max-w-3xl; }
-.ds-layout-onboarding { @apply md:max-w-3xl xl:max-w-7xl; }
-
-/* ==========================================================================
-   Scrollbar utilities
-   ========================================================================== */
-
-.scrollbar-hide {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
+/* Scrollbar */
+::-webkit-scrollbar { @apply w-2; }
+::-webkit-scrollbar-track { @apply bg-gray-100; }
+::-webkit-scrollbar-thumb { @apply bg-gray-400 rounded-full hover:bg-gray-500; }

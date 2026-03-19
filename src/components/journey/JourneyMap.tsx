@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Compass, User, Calendar, Zap, PenLine, Check } from 'lucide-react'
-import { STAGES, JOURNEY, URGENCY_MESSAGES } from '@/lib/copy'
+import { STAGES, URGENCY_MESSAGES } from '@/lib/copy'
 import { weeksUntil, getUrgency } from '@/lib/utils'
 import { useJourneyStore, type StageState } from '@/store/journeyStore'
 import mapImage from '@/assets/map.png'
@@ -18,33 +18,6 @@ const STAGE_ICONS: Record<StageId, React.ElementType> = {
 
 interface JourneyMapProps {
   onStuck: (stageId: string) => void
-}
-
-// Color theme
-const T = {
-  pageBg:      '#f0f4f8',
-  terminalBg:  '#ffffff',
-  barBg:       '#ffffff',
-  border:      '#e2e8f0',
-  accent:      '#2563eb',
-  accentMuted: '#3b82f6',
-  userMuted:   '#94a3b8',
-  hoverBg:     '#eff6ff',
-  selectedBg:  'rgba(37,99,235,0.08)',
-  danger:      '#dc2626',
-  warn:        '#d97706',
-}
-
-// Sidebar theme (mirrors T)
-const S = {
-  bg:          '#ffffff',
-  cardBg:      '#f8fafc',
-  border:      '#e2e8f0',
-  cyan:        '#2563eb',
-  cyanMuted:   '#3b82f6',
-  text:        '#1e293b',
-  muted:       '#94a3b8',
-  hover:       '#eff6ff',
 }
 
 const STAGE_TASKS: Record<string, string[]> = {
@@ -101,190 +74,86 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
     setCheckedTasks((p) => ({ ...p, [key]: !p[key] }))
   }
 
-  const urgencyColor = urgency === 'urgent' ? T.danger : urgency === 'moderate' ? T.warn : T.accentMuted
+  // Studyond brand color palette
+  const urgencyColor = urgency === 'urgent' ? '#E63946' : urgency === 'moderate' ? '#F77F00' : '#2563EB'
+  const textColor = '#1A1A1A'
+  const mutedColor = '#808080'
+  const borderColor = '#ECECEC'
+  const bgColor = '#FFFFFF'
+  const accentBlue = '#2563EB'
 
   return (
     <div
-      className="flex flex-col"
-      style={{ height: '100vh', background: T.pageBg, fontFamily: "'Courier New', Courier, monospace" }}
+      className="flex flex-col bg-white"
+      style={{ height: '100vh' }}
     >
-      {/* ── Top bar ── */}
+      {/* ── Top bar with map header & global progress ── */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
-        className="flex items-center justify-between px-5 py-2 flex-shrink-0"
-        style={{ background: T.barBg, borderBottom: `1px solid ${T.border}` }}
+        className="flex-shrink-0 border-b"
+        style={{ borderColor, backgroundColor: bgColor }}
       >
-        <div className="flex items-center gap-2">
-          <span style={{ color: T.accent, fontSize: 12 }}>▣</span>
-          <span className="text-xs" style={{ color: T.accent, letterSpacing: '0.18em' }}>
-            THESIS_GPS // MAIN_MAP
-          </span>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-xs" style={{ color: T.accentMuted, letterSpacing: '0.1em' }}>
-            {intake.topic ? `"${intake.topic.slice(0, 32)}${intake.topic.length > 32 ? '…' : ''}"` : ''}
-          </span>
+        <div className="flex items-center justify-between px-6 py-3">
+          <div className="flex items-center gap-3">
+            <Compass size={18} color={accentBlue} strokeWidth={2} />
+            <div>
+              <h1 className="ds-title-md font-semibold" style={{ color: textColor }}>
+                THESIS GPS // MAIN MAP
+              </h1>
+              <p className="ds-small" style={{ color: mutedColor }}>
+                {intake.topic ? `${intake.topic.slice(0, 40)}${intake.topic.length > 40 ? '…' : ''}` : 'Your thesis journey'}
+              </p>
+            </div>
+          </div>
           <button
             onClick={resetJourney}
-            className="text-xs px-2 py-0.5 transition-colors"
-            style={{ color: T.userMuted, border: `1px solid ${T.border}`, background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '0.1em' }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = T.hoverBg }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+            className="ds-label px-4 py-2 rounded transition-colors"
+            style={{
+              color: accentBlue,
+              backgroundColor: 'transparent',
+              border: `1px solid ${borderColor}`,
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#F5F5F5' }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent' }}
           >
-            [RESET]
+            Reset Journey
           </button>
         </div>
-      </motion.div>
-
-      {/* ── Body: sidebar + main ── */}
-      <div className="flex flex-1 overflow-hidden">
-
-        {/* ── Left Sidebar ── */}
-        <div
-          className="flex flex-col flex-shrink-0 overflow-y-auto scrollbar-hide"
-          style={{ width: 260, background: S.bg, borderRight: `1px solid ${S.border}`, fontFamily: "'Courier New', Courier, monospace" }}
-        >
-          {/* Header */}
-          <div className="px-5 pt-6 pb-4" style={{ borderBottom: `1px solid ${S.border}` }}>
-            <div className="flex items-center gap-2 mb-1">
-              <Compass size={16} color={S.cyan} strokeWidth={2} />
-              <span className="font-bold text-sm" style={{ color: S.cyan, letterSpacing: '0.18em' }}>NAVIGATOR</span>
-            </div>
-            <span className="text-xs" style={{ color: S.muted, letterSpacing: '0.12em' }}>&gt; THESIS_GPS_ACTIVE</span>
-          </div>
-
-          {/* Global Progress */}
-          <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
+        
+        {/* Progress bar under header */}
+        <div className="px-6 pb-4 flex items-center gap-4">
+          <div className="flex-1">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs" style={{ color: S.muted, letterSpacing: '0.14em' }}>GLOBAL PROGRESS</span>
-              <span className="text-sm font-bold" style={{ color: S.cyan, letterSpacing: '0.05em' }}>{pct}%</span>
+              <span className="ds-small" style={{ color: mutedColor }}>Overall Progress</span>
+              <span className="ds-label font-semibold" style={{ color: accentBlue }}>{pct}%</span>
             </div>
-            <div style={{ height: 4, background: S.border, borderRadius: 2, overflow: 'hidden' }}>
+            <div style={{ height: 6, backgroundColor: borderColor, borderRadius: 3, overflow: 'hidden' }}>
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${pct}%` }}
                 transition={{ duration: 0.8, ease: 'easeOut' }}
-                style={{ height: '100%', background: S.cyan, borderRadius: 2 }}
+                style={{ height: '100%', backgroundColor: accentBlue, borderRadius: 3 }}
               />
             </div>
-            <p className="text-xs mt-2" style={{ color: S.muted, letterSpacing: '0.1em' }}>
-              EST. COMPLETION: {Math.max(1, Math.round(weeksLeft / 4))} MONTHS
+            <p className="ds-caption mt-2" style={{ color: mutedColor }}>
+              Estimated completion: {Math.max(1, Math.round(weeksLeft / 4))} months
             </p>
           </div>
-
-          {/* Current Phase */}
-          {activeStage && (() => {
-            const activeMeta = STAGES.find((s) => s.id === activeStage.id)
-            return (
-              <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
-                <p className="text-xs mb-3" style={{ color: S.muted, letterSpacing: '0.14em' }}>CURRENT PHASE</p>
-                <div className="p-3" style={{ background: S.cardBg, border: `1px solid ${S.border}`, borderRadius: 4 }}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <motion.div
-                      animate={{ opacity: [1, 0.3, 1] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                      style={{ width: 8, height: 8, borderRadius: '50%', background: S.cyan, flexShrink: 0 }}
-                    />
-                    <span className="text-sm font-bold" style={{ color: S.text, letterSpacing: '0.05em' }}>
-                      {activeMeta?.label ?? activeStage.id}
-                    </span>
-                  </div>
-                  <p className="text-xs mb-3" style={{ color: S.muted, lineHeight: 1.5 }}>
-                    {activeMeta?.description ?? ''}
-                  </p>
-                  <button
-                    onClick={() => setSelectedStageId(activeStage.id)}
-                    className="w-full text-xs py-2 font-bold transition-colors"
-                    style={{ background: 'transparent', border: `1px solid ${S.cyan}`, color: S.cyan, cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '0.14em', borderRadius: 2 }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = S.cyanMuted + '33' }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
-                  >
-                    VIEW DETAILS
-                  </button>
-                </div>
-              </div>
-            )
-          })()}
-
-          {/* Milestones */}
-          <div className="px-5 py-4 flex-1">
-            <p className="text-xs mb-3" style={{ color: S.muted, letterSpacing: '0.14em' }}>MILESTONES</p>
-            <div className="space-y-1">
-              {stages.map((st, i) => {
-                const meta   = STAGES.find((s) => s.id === st.id)
-                const isDone = st.status === 'done'
-                const isAct  = st.status === 'active'
-                const isLocked = st.status === 'not_started'
-                return (
-                  <motion.div
-                    key={st.id}
-                    custom={i}
-                    variants={sidebarItem}
-                    initial="hidden"
-                    animate="visible"
-                    onClick={() => setSelectedStageId((prev) => prev === st.id ? null : st.id)}
-                    className="flex items-start gap-3 px-2 py-2 rounded cursor-pointer transition-colors"
-                    style={{ background: selectedStageId === st.id ? S.hover : 'transparent' }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = S.hover }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = selectedStageId === st.id ? S.hover : 'transparent' }}
-                  >
-                    {/* Icon */}
-                    <div style={{ flexShrink: 0, marginTop: 1 }}>
-                      {isDone ? (
-                        <div style={{ width: 18, height: 18, borderRadius: '50%', background: S.cyan, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Check size={11} color={S.bg} strokeWidth={3} />
-                        </div>
-                      ) : isAct ? (
-                        <div style={{ width: 18, height: 18, borderRadius: '50%', border: `2px solid ${S.cyan}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <div style={{ width: 7, height: 7, borderRadius: '50%', background: S.cyan }} />
-                        </div>
-                      ) : (
-                        <div style={{ width: 18, height: 18, borderRadius: '50%', border: `2px solid ${S.border}` }} />
-                      )}
-                    </div>
-                    {/* Label */}
-                    <div>
-                      <p className="text-xs" style={{
-                        color: isAct ? S.text : isDone ? S.muted : S.muted,
-                        fontWeight: isAct ? 'bold' : 'normal',
-                        textDecoration: isDone ? 'line-through' : 'none',
-                        letterSpacing: '0.05em',
-                      }}>
-                        {meta?.label ?? st.id}
-                      </p>
-                      <p className="text-xs mt-0.5" style={{ color: isAct ? S.cyan : S.muted, letterSpacing: '0.1em', fontSize: 10 }}>
-                        {isAct ? '> ACTIVE_NODE' : isDone ? 'COMPLETED' : 'LOCKED'}
-                      </p>
-                    </div>
-                  </motion.div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Bottom */}
-          <div className="px-5 py-4" style={{ borderTop: `1px solid ${S.border}` }}>
-            <button
-              className="w-full text-xs py-1.5 px-3 text-left flex items-center gap-2 transition-colors"
-              style={{ color: S.muted, background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '0.1em' }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = S.cyan }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = S.muted }}
-            >
-              <span>⚙</span><span>SETTINGS</span>
-            </button>
-          </div>
         </div>
+      </motion.div>
 
-        {/* ── Main area ── */}
-        <div className="flex-1 relative overflow-hidden">
+      {/* ── Body: map + right sidebar ── */}
+      <div className="flex flex-1 overflow-hidden">
 
-          {/* Draggable topographic node map */}
+        {/* ── Main map area ── */}
+        <div className="flex-1 relative overflow-hidden border-r" style={{ borderColor }}>
           <NodeMap stages={stages} onSelect={setSelectedStageId} />
 
-          {/* Stage detail card — opens when a sidebar item is clicked */}
-          <div className="absolute inset-0 flex items-center justify-start p-8 pointer-events-none">
+          {/* Stage detail overlay — positioned at top-right with z-index */}
+          <div className="absolute inset-0 flex items-start justify-end p-6 pointer-events-none" style={{ zIndex: 10 }}>
             <AnimatePresence mode="wait">
               {selectedMeta && selectedStage && (
                 <motion.div
@@ -293,84 +162,68 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  className="pointer-events-auto scrollbar-hide"
+                  className="pointer-events-auto scrollbar-hide rounded-lg shadow-lg"
                   style={{
-                    width: 380,
+                    width: 360,
                     maxHeight: 'calc(100vh - 120px)',
                     overflowY: 'auto',
-                    background: T.terminalBg,
-                    border: `1px solid ${T.border}`,
-                    borderRadius: 2,
+                    backgroundColor: bgColor,
+                    border: `1px solid ${borderColor}`,
+                    marginRight: '280px', // Shift left to avoid right sidebar
                   }}
                 >
                   {/* Card header */}
                   <div
-                    className="flex items-center justify-between px-4 py-2"
-                    style={{ background: T.barBg, borderBottom: `1px solid ${T.border}` }}
+                    className="flex items-center justify-between px-5 py-4 border-b"
+                    style={{ borderColor, backgroundColor: '#F5F5F5' }}
                   >
-                    <span className="text-xs" style={{ color: urgencyColor, letterSpacing: '0.15em' }}>
-                      COORD_{selectedIndex + 1}N_{weeksLeft}W
-                    </span>
-                    <div className="flex items-center gap-3">
-                      {isActiveSelected && (
-                        <motion.div
-                          animate={{ opacity: [1, 0.3, 1] }}
-                          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                          style={{ width: 10, height: 10, background: T.accent, borderRadius: 2 }}
-                        />
-                      )}
-                      <button
-                        onClick={() => setSelectedStageId(null)}
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontFamily: 'inherit',
-                          color: T.userMuted,
-                          fontSize: 13,
-                          lineHeight: 1,
-                          padding: '0 2px',
-                        }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = T.accent }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = T.userMuted }}
-                      >
-                        [×]
-                      </button>
+                    <div>
+                      <p className="ds-label" style={{ color: mutedColor }}>
+                        Stage {selectedIndex + 1} of {stages.length}
+                      </p>
+                      <h2 className="ds-title-sm font-semibold" style={{ color: textColor }}>
+                        {selectedMeta.label}
+                      </h2>
                     </div>
+                    <button
+                      onClick={() => setSelectedStageId(null)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: mutedColor,
+                        fontSize: 20,
+                        lineHeight: 1,
+                        padding: '0 4px',
+                      }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = textColor }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = mutedColor }}
+                    >
+                      ×
+                    </button>
                   </div>
 
                   {/* Card body */}
-                  <div className="p-5 space-y-4">
-                    {/* Stage title */}
+                  <div className="p-5 space-y-5">
+                    {/* Description */}
                     <div>
-                      <p className="text-xs mb-1" style={{ color: T.accentMuted, letterSpacing: '0.15em' }}>
-                        SYSTEM
-                      </p>
-                      <h2
-                        className="font-bold uppercase"
-                        style={{ color: T.accent, fontSize: 18, letterSpacing: '0.1em' }}
-                      >
-                        &gt; {selectedMeta.label}
-                      </h2>
-                      <p className="text-xs mt-1" style={{ color: T.userMuted }}>
+                      <p className="ds-body" style={{ color: textColor, lineHeight: '1.6' }}>
                         {selectedMeta.description}
                       </p>
                     </div>
 
                     {/* Timeline info */}
                     <div
-                      className="px-3 py-2"
-                      style={{ borderLeft: `3px solid ${urgencyColor}`, background: T.selectedBg }}
+                      className="px-4 py-3 rounded"
+                      style={{ borderLeft: `3px solid ${urgencyColor}`, backgroundColor: '#F5F5F5' }}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs" style={{ color: T.accentMuted, letterSpacing: '0.12em' }}>
-                          TIMELINE_ANALYSIS
-                        </span>
-                        <span className="text-xs font-bold" style={{ color: urgencyColor, letterSpacing: '0.1em' }}>
-                          {weeksLeft}W LEFT
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="ds-label" style={{ color: mutedColor }}>Time Remaining</span>
+                        <span className="ds-label font-semibold" style={{ color: urgencyColor }}>
+                          {weeksLeft} weeks
                         </span>
                       </div>
-                      <p className="text-xs mt-1" style={{ color: T.userMuted }}>
+                      <p className="ds-small" style={{ color: mutedColor }}>
                         {urgency === 'urgent'
                           ? URGENCY_MESSAGES.urgent
                           : urgency === 'moderate'
@@ -379,102 +232,82 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
                       </p>
                     </div>
 
-                    {/* Pending operations */}
-                    <div>
-                      <p className="text-xs mb-2" style={{ color: T.accentMuted, letterSpacing: '0.15em' }}>
-                        PENDING_OPERATIONS
-                      </p>
-                      <div className="space-y-2">
-                        {tasks.map((task, ti) => {
-                          const key     = `${selectedStage.id}-${ti}`
-                          const checked = checkedTasks[key] ?? false
-                          const status  = checked ? 'COMPLETED' : ti === 0 ? 'IN_PROGRESS' : 'PENDING'
-                          return (
-                            <button
-                              key={key}
-                              onClick={() => toggleTask(key)}
-                              className="w-full text-left flex items-start gap-2 text-xs transition-colors"
-                              style={{
-                                background: 'transparent',
-                                border: 'none',
-                                cursor: 'pointer',
-                                fontFamily: 'inherit',
-                                color: checked ? T.userMuted : T.accentMuted,
-                                opacity: checked ? 0.55 : 1,
-                              }}
-                            >
-                              <span style={{ flexShrink: 0, color: checked ? T.accentMuted : T.accent }}>
-                                {checked ? '[✓]' : '[ ]'}
-                              </span>
-                              <span>
-                                <span style={{ textDecoration: checked ? 'line-through' : 'none' }}>
+                    {/* Tasks */}
+                    {tasks.length > 0 && (
+                      <div>
+                        <p className="ds-label font-semibold mb-3" style={{ color: textColor }}>
+                          Next Steps
+                        </p>
+                        <div className="space-y-2">
+                          {tasks.map((task, ti) => {
+                            const key     = `${selectedStage.id}-${ti}`
+                            const checked = checkedTasks[key] ?? false
+                            return (
+                              <button
+                                key={key}
+                                onClick={() => toggleTask(key)}
+                                className="w-full text-left flex items-start gap-3 p-2 rounded transition-colors hover:bg-gray-50"
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  readOnly
+                                  className="mt-0.5"
+                                  style={{ cursor: 'pointer' }}
+                                />
+                                <span
+                                  className="ds-small"
+                                  style={{
+                                    color: checked ? mutedColor : textColor,
+                                    textDecoration: checked ? 'line-through' : 'none',
+                                  }}
+                                >
                                   {task}
                                 </span>
-                                <br />
-                                <span style={{ color: T.userMuted, letterSpacing: '0.1em', fontSize: 10 }}>
-                                  STATUS: {status}
-                                </span>
-                              </span>
-                            </button>
-                          )
-                        })}
+                              </button>
+                            )
+                          })}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
-                    {/* Metrics row */}
-                    <div className="flex gap-6" style={{ borderTop: `1px solid ${T.border}`, paddingTop: 12 }}>
-                      <div>
-                        <p className="text-xs" style={{ color: T.userMuted, letterSpacing: '0.1em' }}>
-                          WEEKS_REMAINING
-                        </p>
-                        <p className="text-sm font-bold" style={{ color: urgencyColor, letterSpacing: '0.05em' }}>
-                          ~{weeksLeft} WEEKS
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs" style={{ color: T.userMuted, letterSpacing: '0.1em' }}>
-                          STAGE
-                        </p>
-                        <p className="text-sm font-bold" style={{ color: T.accent, letterSpacing: '0.05em' }}>
-                          {selectedIndex + 1}_OF_{stages.length}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Action buttons — only for the current active stage */}
+                    {/* Action buttons */}
                     {isActiveSelected && activeStage && (
-                      <div className="flex gap-2 flex-wrap">
+                      <div className="flex gap-2 flex-wrap border-t" style={{ borderColor, paddingTop: 16 }}>
                         <motion.button
-                          whileHover={{ scale: 1.03 }}
-                          whileTap={{ scale: 0.97 }}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
                           onClick={() => { markStageDone(activeStage.id); setSelectedStageId(null) }}
-                          className="flex-1 text-xs py-2 px-3 font-bold transition-colors"
+                          className="flex-1 ds-label py-2 px-4 font-semibold rounded transition-colors"
                           style={{
-                            background: T.accent,
-                            color: T.pageBg,
-                            border: `1px solid ${T.accent}`,
+                            backgroundColor: accentBlue,
+                            color: 'white',
+                            border: 'none',
                             cursor: 'pointer',
-                            fontFamily: 'inherit',
-                            letterSpacing: '0.12em',
                           }}
                         >
-                          {JOURNEY.markDoneButton.toUpperCase()}
+                          Mark as Done
                         </motion.button>
                         <motion.button
-                          whileHover={{ scale: 1.03, backgroundColor: T.hoverBg }}
-                          whileTap={{ scale: 0.97 }}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
                           onClick={() => onStuck(activeStage.id)}
-                          className="flex-1 text-xs py-2 px-3 transition-colors"
+                          className="flex-1 ds-label py-2 px-4 rounded transition-colors"
                           style={{
-                            background: 'transparent',
-                            color: T.accentMuted,
-                            border: `1px solid ${T.border}`,
+                            backgroundColor: 'transparent',
+                            color: accentBlue,
+                            border: `1px solid ${borderColor}`,
                             cursor: 'pointer',
-                            fontFamily: 'inherit',
-                            letterSpacing: '0.12em',
                           }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#F5F5F5' }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent' }}
                         >
-                          {JOURNEY.stuckButton.toUpperCase()}
+                          Get Help
                         </motion.button>
                       </div>
                     )}
@@ -483,18 +316,154 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
               )}
             </AnimatePresence>
           </div>
+        </div>
 
-          {/* Bottom system log bar */}
-          <div
-            className="absolute bottom-0 right-0 flex gap-6 px-5 py-2 text-xs"
-            style={{ color: T.userMuted, background: 'transparent', letterSpacing: '0.1em', pointerEvents: 'none' }}
-          >
-            <span>
-              <span style={{ color: T.accentMuted }}>SYSTEM_LOG:</span> {activeStage ? `PROCESSING_${activeStage.id.toUpperCase()}` : 'ALL_STAGES_COMPLETE'}
-            </span>
-            <span>
-              <span style={{ color: T.accentMuted }}>NETWORK:</span> CONNECTED_TO_EDU_GRID_01
-            </span>
+        {/* ── Right Sidebar: Navigator, Current Phase, Milestones ── */}
+        <div
+          className="flex flex-col flex-shrink-0 overflow-y-auto bg-gray-50"
+          style={{ width: 280, borderLeft: `1px solid ${borderColor}` }}
+        >
+          {/* Navigator Header */}
+          <div className="px-5 pt-4 pb-3 border-b" style={{ borderColor }}>
+            <div className="flex items-center gap-2 mb-1">
+              <Compass size={16} color={accentBlue} strokeWidth={2} />
+              <span className="ds-label font-semibold" style={{ color: textColor }}>Navigator</span>
+            </div>
+            <p className="ds-caption" style={{ color: mutedColor }}>Thesis GPS</p>
+          </div>
+
+          {/* Current Phase */}
+          {activeStage && (() => {
+            const activeMeta = STAGES.find((s) => s.id === activeStage.id)
+            return (
+              <div className="px-5 py-4 border-b" style={{ borderColor }}>
+                <p className="ds-label font-semibold mb-3" style={{ color: textColor }}>Current Phase</p>
+                <div
+                  className="p-3 rounded"
+                  style={{ border: `1px solid ${borderColor}`, backgroundColor: bgColor }}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <motion.div
+                      animate={{ opacity: [1, 0.3, 1] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                      style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: accentBlue, flexShrink: 0 }}
+                    />
+                    <span className="ds-label font-semibold" style={{ color: accentBlue }}>
+                      {activeMeta?.label ?? activeStage.id}
+                    </span>
+                  </div>
+                  <p className="ds-small mb-3" style={{ color: mutedColor, lineHeight: 1.5 }}>
+                    {activeMeta?.description ?? ''}
+                  </p>
+                  <button
+                    onClick={() => setSelectedStageId(activeStage.id)}
+                    className="w-full ds-small py-2 font-semibold rounded transition-colors"
+                    style={{
+                      backgroundColor: 'transparent',
+                      color: accentBlue,
+                      border: `1px solid ${accentBlue}`,
+                      cursor: 'pointer',
+                    }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(37, 99, 235, 0.05)' }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent' }}
+                  >
+                    View Details
+                  </button>
+                </div>
+              </div>
+            )
+          })()}
+
+          {/* Milestones */}
+          <div className="px-5 py-4 flex-1">
+            <p className="ds-label font-semibold mb-3" style={{ color: textColor }}>Milestones</p>
+            <div className="space-y-1">
+              {stages.map((st, i) => {
+                const meta   = STAGES.find((s) => s.id === st.id)
+                const isDone = st.status === 'done'
+                const isAct  = st.status === 'active'
+                return (
+                  <motion.div
+                    key={st.id}
+                    custom={i}
+                    variants={sidebarItem}
+                    initial="hidden"
+                    animate="visible"
+                    onClick={() => setSelectedStageId((prev) => prev === st.id ? null : st.id)}
+                    className="flex items-start gap-3 px-3 py-2 rounded cursor-pointer transition-colors"
+                    style={{
+                      backgroundColor: selectedStageId === st.id ? '#E8F0FE' : 'transparent',
+                    }}
+                    onMouseEnter={(e) => { if (selectedStageId !== st.id) (e.currentTarget as HTMLElement).style.backgroundColor = '#F0F0F0' }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = selectedStageId === st.id ? '#E8F0FE' : 'transparent' }}
+                  >
+                    {/* Icon */}
+                    <div style={{ flexShrink: 0, marginTop: 2 }}>
+                      {isDone ? (
+                        <div
+                          style={{
+                            width: 20,
+                            height: 20,
+                            borderRadius: '50%',
+                            backgroundColor: accentBlue,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <Check size={12} color="white" strokeWidth={3} />
+                        </div>
+                      ) : isAct ? (
+                        <div
+                          style={{
+                            width: 20,
+                            height: 20,
+                            borderRadius: '50%',
+                            border: `2px solid ${accentBlue}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              backgroundColor: accentBlue,
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div
+                          style={{
+                            width: 20,
+                            height: 20,
+                            borderRadius: '50%',
+                            border: `2px solid ${borderColor}`,
+                          }}
+                        />
+                      )}
+                    </div>
+                    {/* Label */}
+                    <div>
+                      <p
+                        className="ds-small font-medium"
+                        style={{
+                          color: isAct ? accentBlue : isDone ? mutedColor : textColor,
+                          textDecoration: isDone ? 'line-through' : 'none',
+                        }}
+                      >
+                        {meta?.label ?? st.id}
+                      </p>
+                      <p className="ds-caption" style={{ color: mutedColor, marginTop: 2 }}>
+                        {isAct ? 'Active' : isDone ? 'Completed' : 'Locked'}
+                      </p>
+                    </div>
+                  </motion.div>
+                )
+              })}
+            </div>
           </div>
         </div>
       </div>
@@ -520,7 +489,6 @@ function NodeMap({ stages, onSelect }: { stages: StageState[]; onSelect: (id: st
       setPositions(prev => {
         const next: Record<string, { x: number; y: number }> = {}
         NODE_POSITIONS.forEach(n => {
-          // keep user-dragged positions; only init missing ones
           next[n.id] = prev[n.id] ?? { x: (n.x / 240) * w, y: (n.y / 150) * h }
         })
         return next
@@ -573,95 +541,144 @@ function NodeMap({ stages, onSelect }: { stages: StageState[]; onSelect: (id: st
     didDrag.current = false
   }
 
+  const accentBlue = '#2563EB'
+  const borderColor = '#ECECEC'
+  const mutedColor = '#808080'
+
   return (
     <div
       className="absolute inset-0 flex items-center justify-center"
-      style={{ padding: 32 }}
+      style={{ padding: 24 }}
     >
       <div
         ref={containerRef}
+        className="rounded-lg"
         style={{
           position: 'relative',
-          width: '100%', height: '100%',
-          border: `1px solid ${T.border}`,
-          borderRadius: 4,
+          width: '100%',
+          height: '100%',
+          border: `1px solid ${borderColor}`,
           overflow: 'hidden',
-          boxShadow: '0 2px 16px rgba(0,0,0,0.08)',
+          backgroundColor: '#FAFAFA',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
         }}
       >
-        {/* Background + map image */}
-        <div style={{ position: 'absolute', inset: 0, background: '#F3F5F6' }} />
+        {/* Background with map image at low opacity */}
         <img
-          src={mapImage} alt="topographic map" draggable={false}
-          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: 0.35, position: 'relative' }}
+          src={mapImage}
+          alt="topographic map"
+          draggable={false}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            display: 'block',
+            opacity: 0.12,
+            position: 'absolute',
+            inset: 0,
+          }}
         />
 
-        {/* SVG lines — pixel coords matching container size */}
+        {/* SVG lines — connect completed stages */}
         <svg
           viewBox={`0 0 ${containerSize.w} ${containerSize.h}`}
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            pointerEvents: 'none',
+            zIndex: 1,
+          }}
         >
           {segments.map((d, i) => (
-            <path key={i} d={d} fill="none" stroke={T.accent} strokeWidth="2" opacity={0.5} />
+            <path
+              key={i}
+              d={d}
+              fill="none"
+              stroke={accentBlue}
+              strokeWidth="2"
+              opacity={0.3}
+              strokeLinecap="round"
+            />
           ))}
         </svg>
 
         {/* Draggable nodes */}
-        {points.map((p) => {
-          const isDone = p.status === 'done'
-          const isAct  = p.status === 'active'
-          const Icon   = STAGE_ICONS[p.id as StageId]
-          return (
-            <div
-              key={p.id}
-              style={{
-                position: 'absolute',
-                left: p.pos.x,
-                top:  p.pos.y,
-                transform: 'translate(-50%, -50%)',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
-                userSelect: 'none',
-              }}
-            >
-              <motion.button
-                whileHover={{ scale: 1.12 }}
-                whileTap={{ scale: 0.95 }}
-                onPointerDown={(e) => handlePointerDown(e, p.id)}
-                onPointerMove={handlePointerMove}
-                onPointerUp={(e) => handlePointerUp(e, p.id)}
+        <div style={{ position: 'relative', width: '100%', height: '100%', zIndex: 2 }}>
+          {points.map((p) => {
+            const isDone = p.status === 'done'
+            const isAct  = p.status === 'active'
+            const Icon   = STAGE_ICONS[p.id as StageId]
+            return (
+              <div
+                key={p.id}
                 style={{
-                  width: 40, height: 40,
-                  background: isAct ? T.accent : isDone ? T.accentMuted : T.terminalBg,
-                  border: `2px solid ${isAct ? T.accent : isDone ? T.accentMuted : T.border}`,
-                  borderRadius: 5,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'grab',
-                  touchAction: 'none',
-                  boxShadow: isAct
-                    ? `0 0 0 5px ${T.accent}28, 0 2px 10px rgba(0,0,0,0.18)`
-                    : '0 1px 6px rgba(0,0,0,0.14)',
-                  opacity: isAct ? 1 : isDone ? 0.9 : 0.55,
+                  position: 'absolute',
+                  left: p.pos.x,
+                  top:  p.pos.y,
+                  transform: 'translate(-50%, -50%)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 6,
+                  userSelect: 'none',
                 }}
               >
-                {isDone
-                  ? <Check size={17} color="#fff" strokeWidth={2.5} />
-                  : <Icon  size={17} color={isAct ? '#fff' : T.userMuted} strokeWidth={2} />
-                }
-              </motion.button>
-              <span style={{
-                fontSize: 9, letterSpacing: '0.08em',
-                color: isAct ? T.accent : isDone ? T.accentMuted : T.userMuted,
-                opacity: isAct ? 1 : isDone ? 0.7 : 0.45,
-                fontFamily: "'Courier New', monospace",
-                pointerEvents: 'none',
-                background: 'rgba(240,244,248,0.75)',
-                padding: '1px 4px',
-              }}>
-                {p.stageName}
-              </span>
-            </div>
-          )
-        })}
+                <motion.button
+                  whileHover={{ scale: 1.12 }}
+                  whileTap={{ scale: 0.95 }}
+                  onPointerDown={(e) => handlePointerDown(e, p.id)}
+                  onPointerMove={handlePointerMove}
+                  onPointerUp={(e) => handlePointerUp(e, p.id)}
+                  style={{
+                    width: 44,
+                    height: 44,
+                    backgroundColor: isAct ? accentBlue : isDone ? '#BFDBFE' : '#FFFFFF',
+                    border: `2px solid ${isAct ? accentBlue : isDone ? accentBlue : borderColor}`,
+                    borderRadius: 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'grab',
+                    touchAction: 'none',
+                    boxShadow: isAct
+                      ? `0 0 0 6px rgba(37, 99, 235, 0.1), 0 2px 8px rgba(0,0,0,0.1)`
+                      : isDone
+                      ? '0 1px 4px rgba(0,0,0,0.08)'
+                      : '0 1px 3px rgba(0,0,0,0.06)',
+                    opacity: isAct ? 1 : isDone ? 0.85 : 0.6,
+                  }}
+                >
+                  {isDone ? (
+                    <Check size={18} color={accentBlue} strokeWidth={2.5} />
+                  ) : (
+                    <Icon
+                      size={18}
+                      color={isAct ? '#FFFFFF' : mutedColor}
+                      strokeWidth={2}
+                    />
+                  )}
+                </motion.button>
+                <span
+                  className="ds-caption font-medium"
+                  style={{
+                    color: isAct ? accentBlue : isDone ? accentBlue : mutedColor,
+                    opacity: isAct ? 1 : isDone ? 0.7 : 0.5,
+                    pointerEvents: 'none',
+                    backgroundColor: '#FFFFFF',
+                    padding: '2px 5px',
+                    borderRadius: 3,
+                    border: `1px solid ${borderColor}`,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {p.stageName}
+                </span>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
