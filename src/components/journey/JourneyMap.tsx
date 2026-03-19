@@ -4,6 +4,9 @@ import { Compass, User, Calendar, Zap, PenLine, Check } from 'lucide-react'
 import { STAGES, URGENCY_MESSAGES } from '@/lib/copy'
 import { weeksUntil, getUrgency } from '@/lib/utils'
 import { useJourneyStore, type StageState } from '@/store/journeyStore'
+import { ActionCard } from '@/components/journey/ActionCard'
+import { useMatches } from '@/hooks/useMatches'
+import { getFieldName, getUniversityName } from '@/data'
 import mapImage from '@/assets/map.png'
 
 type StageId = 'orientation' | 'supervisor' | 'planning' | 'execution' | 'writing'
@@ -69,6 +72,11 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
   const selectedIndex = selectedStage ? stages.findIndex((s) => s.id === selectedStage.id) : 0
   const tasks         = selectedStage ? (STAGE_TASKS[selectedStage.id] ?? []) : []
   const isActiveSelected = selectedStage?.status === 'active'
+  const remainingNotStarted = stages.filter((s) => s.status === 'not_started').length
+  const visibleMilestones = urgency === 'urgent'
+    ? stages.filter((s) => s.status !== 'not_started')
+    : stages
+  const { topSupervisors, topExperts } = useMatches(intake.fieldIds, 2)
 
   function toggleTask(key: string) {
     setCheckedTasks((p) => ({ ...p, [key]: !p[key] }))
@@ -276,6 +284,67 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
                       </div>
                     )}
 
+                    {/* AI next action */}
+                    {isActiveSelected && (
+                      <ActionCard
+                        stage={selectedMeta?.label ?? selectedStage.id}
+                        topic={intake.topic}
+                        university={intake.university}
+                        deadline={intake.deadline}
+                        weeksLeft={weeksLeft}
+                        urgency={urgency}
+                      />
+                    )}
+
+                    {/* Suggested contacts based on field overlap */}
+                    {isActiveSelected && (topSupervisors.length > 0 || topExperts.length > 0) && (
+                      <div className="space-y-2">
+                        <p className="ds-label font-semibold" style={{ color: textColor }}>
+                          Suggested contacts
+                        </p>
+
+                        {topSupervisors.map(({ supervisor, overlappingFields }) => (
+                          <div
+                            key={supervisor.id}
+                            className="rounded px-3 py-2"
+                            style={{ backgroundColor: '#F5F5F5', border: `1px solid ${borderColor}` }}
+                          >
+                            <p className="ds-small font-medium" style={{ color: textColor }}>
+                              {supervisor.title} {supervisor.firstName} {supervisor.lastName}
+                            </p>
+                            <p className="ds-caption" style={{ color: mutedColor }}>
+                              {getUniversityName(supervisor.universityId)}
+                            </p>
+                            {overlappingFields.length > 0 && (
+                              <p className="ds-caption mt-1" style={{ color: mutedColor }}>
+                                Match: {overlappingFields.map(getFieldName).join(', ')}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+
+                        {topExperts.map(({ expert, overlappingFields }) => (
+                          <div
+                            key={expert.id}
+                            className="rounded px-3 py-2"
+                            style={{ backgroundColor: '#F5F5F5', border: `1px solid ${borderColor}` }}
+                          >
+                            <p className="ds-small font-medium" style={{ color: textColor }}>
+                              {expert.firstName} {expert.lastName}
+                            </p>
+                            <p className="ds-caption" style={{ color: mutedColor }}>
+                              {expert.title} · {expert.companyName}
+                            </p>
+                            {overlappingFields.length > 0 && (
+                              <p className="ds-caption mt-1" style={{ color: mutedColor }}>
+                                Match: {overlappingFields.map(getFieldName).join(', ')}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     {/* Action buttons */}
                     {isActiveSelected && activeStage && (
                       <div className="flex gap-2 flex-wrap border-t" style={{ borderColor, paddingTop: 16 }}>
@@ -378,7 +447,7 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
           <div className="px-5 py-4 flex-1">
             <p className="ds-label font-semibold mb-3" style={{ color: textColor }}>Milestones</p>
             <div className="space-y-1">
-              {stages.map((st, i) => {
+              {visibleMilestones.map((st, i) => {
                 const meta   = STAGES.find((s) => s.id === st.id)
                 const isDone = st.status === 'done'
                 const isAct  = st.status === 'active'
@@ -463,6 +532,17 @@ export function JourneyMap({ onStuck }: JourneyMapProps) {
                   </motion.div>
                 )
               })}
+
+              {urgency === 'urgent' && remainingNotStarted > 0 && (
+                <div
+                  className="px-3 py-2 rounded"
+                  style={{ border: `1px dashed ${borderColor}`, backgroundColor: '#FFFFFF' }}
+                >
+                  <p className="ds-small" style={{ color: mutedColor }}>
+                    {remainingNotStarted} stages remaining - focus on what's in front of you
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
