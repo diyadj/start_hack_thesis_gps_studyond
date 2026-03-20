@@ -1,4 +1,3 @@
-git clone <your-repo-url>
 # 🧭 Thesis GPS
 
 > An AI-powered single-page map for your thesis. Drop in your situation, get a live route, and never feel lost again.
