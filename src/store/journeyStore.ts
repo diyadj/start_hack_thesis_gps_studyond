@@ -14,9 +14,29 @@ export interface IntakeData {
 // Each stage can be: not started, active (current), done
 export type StageStatus = 'not_started' | 'active' | 'done'
 
+const STAGE_ORDER = [
+  'orientation',
+  'supervisor',
+  'application',
+  'planning',
+  'execution',
+  'writing',
+  'submission',
+  'apply_jobs',
+] as const
+
+export type StageId = typeof STAGE_ORDER[number]
+
 export interface StageState {
-  id: string
+  id: StageId
   status: StageStatus
+}
+
+const DEFAULT_STAGES: StageState[] = STAGE_ORDER.map((id) => ({ id, status: 'not_started' }))
+
+function normalizeStages(stages: StageState[] | undefined): StageState[] {
+  const stageMap = new Map((stages ?? []).map((stage) => [stage.id, stage.status]))
+  return STAGE_ORDER.map((id) => ({ id, status: stageMap.get(id) ?? 'not_started' }))
 }
 
 interface JourneyStore {
@@ -31,32 +51,21 @@ interface JourneyStore {
 
   // Actions
   startJourney: (intake: IntakeData) => void
-  markStageDone: (stageId: string) => void
+  markStageDone: (stageId: StageId) => void
   resetJourney: () => void
 }
 
-const DEFAULT_STAGES: StageState[] = [
-  { id: 'orientation', status: 'not_started' },
-  { id: 'supervisor', status: 'not_started' },
-  { id: 'application', status: 'not_started' },
-  { id: 'planning', status: 'not_started' },
-  { id: 'execution', status: 'not_started' },
-  { id: 'writing', status: 'not_started' },
-  { id: 'submission', status: 'not_started' },
-  { id: 'apply_jobs', status: 'not_started' },
-]
-
 // Maps the intake's currentStage value to the stages array
 function buildInitialStages(currentStage: string): StageState[] {
-  const stageOrder = ['orientation', 'supervisor', 'application', 'planning', 'execution', 'writing', 'submission', 'apply_jobs']
-  const currentIndex = stageOrder.indexOf(currentStage)
+  const currentIndex = STAGE_ORDER.indexOf(currentStage as StageId)
+  const safeIndex = currentIndex === -1 ? 0 : currentIndex
 
-  return stageOrder.map((id, index) => ({
+  return STAGE_ORDER.map((id, index) => ({
     id,
     status:
-      index < currentIndex
+      index < safeIndex
         ? 'done'
-        : index === currentIndex
+        : index === safeIndex
           ? 'active'
           : 'not_started',
   }))
@@ -79,12 +88,12 @@ export const useJourneyStore = create<JourneyStore>()(
 
       markStageDone: (stageId) => {
         set((state) => {
-          const stageOrder = ['orientation', 'supervisor', 'application', 'planning', 'execution', 'writing', 'submission', 'apply_jobs']
-          const doneIndex = stageOrder.indexOf(stageId)
+          const doneIndex = STAGE_ORDER.indexOf(stageId)
+          if (doneIndex === -1) return state
 
           return {
-            stages: state.stages.map((s, index) => ({
-              id: s.id,
+            stages: STAGE_ORDER.map((id, index) => ({
+              id,
               status:
                 index < doneIndex
                   ? 'done'
@@ -92,7 +101,7 @@ export const useJourneyStore = create<JourneyStore>()(
                     ? 'done'
                     : index === doneIndex + 1
                       ? 'active'
-                      : s.status,
+                      : 'not_started',
             })),
           }
         })
@@ -105,6 +114,14 @@ export const useJourneyStore = create<JourneyStore>()(
     {
       // This key is what gets saved to localStorage
       name: 'thesis-gps-journey',
+      version: 1,
+      migrate: (persistedState) => {
+        if (!persistedState) return persistedState
+        return {
+          ...persistedState,
+          stages: normalizeStages((persistedState as JourneyStore).stages),
+        }
+      },
     }
   )
 )

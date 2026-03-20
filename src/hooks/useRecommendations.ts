@@ -1,8 +1,7 @@
 import { useMemo } from 'react'
 import { projects, topics, supervisors, experts } from '../data'
 import type { Project, Topic } from '../data'
-
-type StageId = 'orientation' | 'supervisor' | 'application' | 'planning' | 'execution' | 'writing' | 'submission' | 'apply_jobs'
+import type { StageId } from '@/store/journeyStore'
 
 interface RecommendedTopic {
   topic: Topic
