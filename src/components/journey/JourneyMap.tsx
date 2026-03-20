@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Compass, User, Calendar, Zap, PenLine, Check, FileCheck2, Briefcase, ClipboardCheck } from 'lucide-react'
 import { STAGES, URGENCY_MESSAGES } from '@/lib/copy'
 import { weeksUntil, getUrgency } from '@/lib/utils'
-import { useJourneyStore, type StageState } from '@/store/journeyStore'
+import { useJourneyStore, type StageState, type StageId } from '@/store/journeyStore'
 import { ActionCard } from '@/components/journey/ActionCard'
 import { StageWorkspace } from '@/components/journey/StageWorkspace'
 import { useMatches } from '@/hooks/useMatches'
@@ -12,11 +12,9 @@ import { getFieldName, getUniversityName } from '@/data'
 import mapImage from '@/assets/map.png'
 import contourMapImage from '@/assets/Contour-Map.svg'
 
-type StageId = 'orientation' | 'supervisor' | 'application' | 'planning' | 'execution' | 'writing' | 'submission' | 'apply_jobs'
-
 type PlannerItem = {
   id: string
-  stageId: string
+  stageId: StageId
   stageLabel: string
   text: string
   status: 'todo' | 'in_progress' | 'done'

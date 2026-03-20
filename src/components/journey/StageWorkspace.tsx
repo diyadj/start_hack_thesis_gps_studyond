@@ -3,12 +3,11 @@ import { SupervisorWorkspace } from './stages/SupervisorWorkspace'
 import { ApplicationWorkspace } from './stages/ApplicationWorkspace'
 import { PlannerWorkspace } from './stages/PlannerWorkspace'
 import { WritingWorkspace } from './stages/WritingWorkspace'
-
-type StageId = 'orientation' | 'supervisor' | 'application' | 'planning' | 'execution' | 'writing' | 'submission' | 'apply_jobs'
+import type { StageId } from '@/store/journeyStore'
 
 type PlannerItem = {
   id: string
-  stageId: string
+  stageId: StageId
   stageLabel: string
   text: string
   status: 'todo' | 'in_progress' | 'done'
