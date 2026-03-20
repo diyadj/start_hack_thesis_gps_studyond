@@ -78,7 +78,7 @@ npm run dev
 
 Open http://localhost:5173 
 
-Open our website https://starthackthesisgpsstudyond.vercel.app/ to explore the live journey.
+Open our website https://andalusiathesisgps.vercel.app/ to explore the live journey.
 
 ---
 
