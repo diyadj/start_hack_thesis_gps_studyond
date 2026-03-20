@@ -1,24 +1,18 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Compass, User, Calendar, Zap, PenLine, Check, FileCheck2, Briefcase, ClipboardCheck } from 'lucide-react'
 import { STAGES, URGENCY_MESSAGES } from '@/lib/copy'
 import { weeksUntil, getUrgency } from '@/lib/utils'
-import { useJourneyStore, type StageState, type StageId } from '@/store/journeyStore'
+import { useJourneyStore, type StageState } from '@/store/journeyStore'
 import { ActionCard } from '@/components/journey/ActionCard'
 import { StageWorkspace } from '@/components/journey/StageWorkspace'
 import { useMatches } from '@/hooks/useMatches'
 import { useRecommendations } from '@/hooks/useRecommendations'
 import { getFieldName, getUniversityName } from '@/data'
+import type { StageId } from '@/lib/stageConfig'
+import { STAGE_TASKS } from '@/lib/stageTasks'
 import mapImage from '@/assets/map.png'
 import contourMapImage from '@/assets/Contour-Map.svg'
-
-type PlannerItem = {
-  id: string
-  stageId: StageId
-  stageLabel: string
-  text: string
-  status: 'todo' | 'in_progress' | 'done'
-}
 
 const STAGE_ICONS: Record<StageId, React.ElementType> = {
   orientation: Compass,
@@ -36,22 +30,11 @@ interface JourneyMapProps {
   onReset?: () => void
 }
 
-const STAGE_TASKS: Record<string, string[]> = {
-  orientation: ['Define research question', 'Review literature scope', 'Align with advisor interests'],
-  supervisor:  ['Review publications list (2022–2024)', 'Map project scope to lab resources', 'Draft initial outreach communication'],
-  application: ['Shortlist 3 company projects and 2 university projects', 'Submit applications with tailored motivation', 'Track responses and compare offer fit'],
-  planning:    ['Draft methodology outline', 'Create project timeline', 'Confirm company partner alignment'],
-  execution:   ['Conduct expert interviews', 'Collect & clean dataset', 'Iterate on findings with advisor'],
-  writing:     ['Draft introduction & conclusion', 'Peer review round', 'Final formatting & citation check'],
-  submission:  ['Run final plagiarism and formatting checks', 'Prepare defense summary deck', 'Submit thesis package before deadline'],
-  apply_jobs:  ['Extract 3 resume bullets from thesis outcomes', 'Prepare portfolio summary of your thesis impact', 'Apply to 5 role-aligned openings with tailored outreach'],
-}
-
 // Node positions in the SVG coordinate space (viewBox 0 0 240 150)
 const NODE_POSITIONS = [
   { id: 'orientation', x: 20,  y: 112, label: 'NODE_ORIENT', stageName: 'ORIENTATION' },
-  { id: 'supervisor',  x: 48,  y: 74,  label: 'NODE_SUPV',   stageName: 'SUPERVISOR'  },
-  { id: 'application', x: 76,  y: 102, label: 'NODE_APPLY',  stageName: 'APPLICATION' },
+  { id: 'application', x: 48,  y: 74,  label: 'NODE_APPLY',  stageName: 'APPLICATION' },
+  { id: 'supervisor',  x: 76,  y: 102, label: 'NODE_SUPV',   stageName: 'SUPERVISOR'  },
   { id: 'planning',    x: 104, y: 68,  label: 'NODE_PLAN',   stageName: 'PLANNING'    },
   { id: 'execution',   x: 136, y: 100, label: 'NODE_EXEC',   stageName: 'EXECUTION'   },
   { id: 'writing',     x: 166, y: 66,  label: 'NODE_WRITE',  stageName: 'WRITING'     },
@@ -75,7 +58,17 @@ const cardVariants = {
 }
 
 export function JourneyMap({ onStuck, onReset }: JourneyMapProps) {
-  const { intake, stages, markStageDone, resetJourney } = useJourneyStore()
+  const {
+    intake,
+    stages,
+    plannerBoard,
+    markStageDone,
+    resetJourney,
+    addPlannerTask,
+    updatePlannerTask,
+    setPlannerTaskStatus,
+    removePlannerTask,
+  } = useJourneyStore()
   const [checkedTasks, setCheckedTasks] = useState<Record<string, boolean>>({})
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null)
 
@@ -105,25 +98,6 @@ export function JourneyMap({ onStuck, onReset }: JourneyMapProps) {
   const supervisorRecommendations = useRecommendations('supervisor', intake.topic, intake.fieldIds)
   const activeStageId = (activeStage?.id as StageId | undefined) ?? 'orientation'
 
-
-  const plannerItems = useMemo<PlannerItem[]>(() => {
-    const managedStages: StageId[] = ['planning', 'execution', 'writing', 'submission', 'apply_jobs']
-    return managedStages.flatMap((stageId) => {
-      const stageTasks = STAGE_TASKS[stageId] ?? []
-      return stageTasks.map((task, index) => {
-        const taskKey = `${stageId}-${index}`
-        const isDone = checkedTasks[taskKey] ?? false
-        const isInProgress = !isDone && activeStage?.id === stageId
-        return {
-          id: taskKey,
-          stageId,
-          stageLabel: STAGES.find((s) => s.id === stageId)?.shortLabel ?? stageId,
-          text: task,
-          status: isDone ? 'done' : isInProgress ? 'in_progress' : 'todo' as PlannerItem['status'],
-        }
-      })
-    })
-  }, [activeStage?.id, checkedTasks])
 
   function toggleTask(key: string) {
     setCheckedTasks((p) => ({ ...p, [key]: !p[key] }))
@@ -217,7 +191,11 @@ export function JourneyMap({ onStuck, onReset }: JourneyMapProps) {
             topic={intake.topic}
             applicationRecommendations={applicationRecommendations}
             supervisorRecommendations={supervisorRecommendations}
-            plannerItems={plannerItems}
+            plannerItems={plannerBoard}
+            onAddPlannerItem={addPlannerTask}
+            onUpdatePlannerItem={updatePlannerTask}
+            onPlannerStatusChange={setPlannerTaskStatus}
+            onRemovePlannerItem={removePlannerTask}
             borderColor={borderColor}
             textColor={textColor}
             mutedColor={mutedColor}

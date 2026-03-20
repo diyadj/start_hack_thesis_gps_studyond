@@ -12,20 +12,20 @@ export const STAGES = [
     weeks: 'Weeks 1-4',
   },
   {
-    id: 'supervisor',
-    label: 'Locking In a Supervisor',
-    shortLabel: 'Supervisor',
-    description: 'Finding the professor who will guide and grade your thesis',
-    icon: '🎓',
-    weeks: 'Weeks 2-8',
-  },
-  {
     id: 'application',
     label: 'Applying to Projects',
     shortLabel: 'Application',
     description: 'Choose and apply to a company project or a university project that fits you best',
     icon: '🧩',
     weeks: 'Weeks 6-10',
+  },
+  {
+    id: 'supervisor',
+    label: 'Locking In a Supervisor',
+    shortLabel: 'Supervisor',
+    description: 'Finding the professor who will guide and grade your thesis',
+    icon: '🎓',
+    weeks: 'Weeks 2-8',
   },
   {
     id: 'planning',

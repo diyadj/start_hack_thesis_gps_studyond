@@ -3,15 +3,8 @@ import { SupervisorWorkspace } from './stages/SupervisorWorkspace'
 import { ApplicationWorkspace } from './stages/ApplicationWorkspace'
 import { PlannerWorkspace } from './stages/PlannerWorkspace'
 import { WritingWorkspace } from './stages/WritingWorkspace'
-import type { StageId } from '@/store/journeyStore'
-
-type PlannerItem = {
-  id: string
-  stageId: StageId
-  stageLabel: string
-  text: string
-  status: 'todo' | 'in_progress' | 'done'
-}
+import type { StageId, PlannerStatus } from '@/lib/stageConfig'
+import type { PlannerTask } from '@/store/journeyStore'
 
 interface StageWorkspaceProps {
   activeStageId: StageId
@@ -41,7 +34,11 @@ interface StageWorkspaceProps {
       supervisor: { id: string; firstName: string; lastName: string; title: string }
     }>
   }
-  plannerItems: PlannerItem[]
+  plannerItems: PlannerTask[]
+  onAddPlannerItem: (payload: { stageId: StageId; text: string }) => void
+  onUpdatePlannerItem: (taskId: string, updates: { text?: string; stageId?: StageId }) => void
+  onPlannerStatusChange: (taskId: string, status: PlannerStatus) => void
+  onRemovePlannerItem: (taskId: string) => void
   borderColor: string
   textColor: string
   mutedColor: string
@@ -54,6 +51,10 @@ export function StageWorkspace({
   applicationRecommendations,
   supervisorRecommendations,
   plannerItems,
+  onAddPlannerItem,
+  onUpdatePlannerItem,
+  onPlannerStatusChange,
+  onRemovePlannerItem,
   borderColor,
   textColor,
   mutedColor,
@@ -113,6 +114,10 @@ export function StageWorkspace({
       {!['orientation', 'supervisor', 'application', 'writing'].includes(activeStageId) && (
         <PlannerWorkspace
           plannerItems={plannerItems}
+          onAddPlannerItem={onAddPlannerItem}
+          onUpdatePlannerItem={onUpdatePlannerItem}
+          onPlannerStatusChange={onPlannerStatusChange}
+          onRemovePlannerItem={onRemovePlannerItem}
           borderColor={borderColor}
           textColor={textColor}
           mutedColor={mutedColor}
