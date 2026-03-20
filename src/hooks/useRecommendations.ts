@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { projects, topics, supervisors, experts } from '../data'
 import type { Project, Topic } from '../data'
-import type { StageId } from '@/store/journeyStore'
+import type { StageId } from '@/lib/stageConfig'
 
 interface RecommendedTopic {
   topic: Topic
