@@ -82,7 +82,6 @@ export function PlannerWorkspace({
           <KanbanColumn
             key={status}
             title={title}
-            status={status}
             items={grouped[status]}
             stageOptions={stageOptions}
             borderColor={borderColor}

@@ -16,7 +16,6 @@ const STATUS_OPTIONS: Array<{ value: PlannerStatus; label: string }> = [
 
 interface KanbanColumnProps {
   title: string
-  status: PlannerStatus
   items: PlannerTask[]
   stageOptions: Array<{ id: StageId; label: string }>
   borderColor: string
@@ -29,7 +28,6 @@ interface KanbanColumnProps {
 
 export function KanbanColumn({
   title,
-  status,
   items,
   stageOptions,
   borderColor,
@@ -50,7 +48,6 @@ export function KanbanColumn({
           <TaskCard
             key={item.id}
             item={item}
-            columnStatus={status}
             stageOptions={stageOptions}
             borderColor={borderColor}
             textColor={textColor}
