@@ -65,13 +65,13 @@ export default function App() {
                 <span className="text-sm font-medium">Home</span>
               </button>
 
-              <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
-                <MessageSquare className="w-5 h-5 text-gray-600" />
+              <button disabled className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed opacity-60">
+                <MessageSquare className="w-5 h-5 text-gray-400" />
                 <span className="text-sm font-medium">Messages</span>
               </button>
 
-              <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
-                <Folder className="w-5 h-5 text-gray-600" />
+              <button disabled className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed opacity-60">
+                <Folder className="w-5 h-5 text-gray-400" />
                 <span className="text-sm font-medium">My Projects</span>
               </button>
 
@@ -79,7 +79,7 @@ export default function App() {
                 onClick={() => setAppView(hasStarted ? 'journey' : 'intake')}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
                   appView === 'journey' || appView === 'intake'
-                    ? 'bg-blue-50 text-blue-600' 
+                    ? 'bg-blue-50 text-blue-600'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
@@ -87,7 +87,10 @@ export default function App() {
                   <Compass className="w-5 h-5" />
                   <span className="text-sm font-medium">Thesis GPS</span>
                 </div>
-                <ChevronRight className="w-4 h-4" />
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] font-semibold bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full">Main</span>
+                  <ChevronRight className="w-4 h-4" />
+                </div>
               </button>
             </div>
           </div>
@@ -96,19 +99,17 @@ export default function App() {
           <div className="px-6 py-4 border-t border-gray-200">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Explore</p>
             <div className="space-y-2">
-              <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+              <button disabled className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed opacity-60">
                 <span className="text-sm font-medium">Topics</span>
               </button>
-              <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+              <button disabled className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed opacity-60">
                 <span className="text-sm font-medium">Jobs</span>
               </button>
-              <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+              <button disabled className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed opacity-60">
                 <span className="text-sm font-medium">People</span>
-                <ChevronRight className="w-4 h-4 ml-auto text-gray-400" />
               </button>
-              <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+              <button disabled className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed opacity-60">
                 <span className="text-sm font-medium">Organizations</span>
-                <ChevronRight className="w-4 h-4 ml-auto text-gray-400" />
               </button>
             </div>
           </div>
@@ -116,8 +117,8 @@ export default function App() {
 
         {/* Settings & Profile */}
         <div className="border-t border-gray-200 px-6 py-4 space-y-2">
-          <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
-            <Settings className="w-5 h-5 text-gray-600" />
+          <button disabled className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed opacity-60">
+            <Settings className="w-5 h-5 text-gray-400" />
             <span className="text-sm font-medium">My Settings</span>
           </button>
 
@@ -125,8 +126,8 @@ export default function App() {
             <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-400" />
               <div className="text-left min-w-0">
-                <p className="text-sm font-medium truncate">Diya Desai</p>
-                <p className="text-xs text-gray-500 truncate">diyajigneshbhai.desai@stu...</p>
+                <p className="text-sm font-medium truncate">Alexander Tan</p>
+                <p className="text-xs text-gray-500 truncate">alexander.tan@studyond.ch</p>
               </div>
             </button>
           </div>
